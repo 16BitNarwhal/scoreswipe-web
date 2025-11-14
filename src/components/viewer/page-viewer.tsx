@@ -40,13 +40,13 @@ const PageViewer = ({ score, pageIndex, onPageChange }: PageViewerProps) => {
 
   return (
     <>
-      <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-semibold text-brand-500">{score.name}</h1>
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold text-brand-500">{score.name}</h1>
           <div className="flex items-center gap-3">
-            <p className="text-sm text-brand-400">
-              Page {pageIndex + 1} / {score.pages.length}
-            </p>
+        <p className="text-sm text-brand-400">
+          Page {pageIndex + 1} / {score.pages.length}
+        </p>
             <button
               type="button"
               onClick={() => setIsFullscreen(true)}
@@ -71,24 +71,24 @@ const PageViewer = ({ score, pageIndex, onPageChange }: PageViewerProps) => {
             {score.pages.map((page, idx) => (
               <PageImage key={`${page.id || idx}-${score.id}`} page={page} index={idx} />
             ))}
-          </div>
-          <button
-            type="button"
-            onClick={handlePrev}
+      </div>
+        <button
+          type="button"
+          onClick={handlePrev}
             disabled={pageIndex === 0 || isTransitioning}
             className="absolute left-6 top-1/2 -translate-y-1/2 rounded-full bg-white/80 p-3 text-brand-400 shadow transition-all hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            <ChevronLeft className="h-6 w-6" />
-          </button>
-          <button
-            type="button"
-            onClick={handleNext}
+        >
+          <ChevronLeft className="h-6 w-6" />
+        </button>
+        <button
+          type="button"
+          onClick={handleNext}
             disabled={pageIndex === maxIndex || isTransitioning}
             className="absolute right-6 top-1/2 -translate-y-1/2 rounded-full bg-white/80 p-3 text-brand-400 shadow transition-all hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            <ChevronRight className="h-6 w-6" />
-          </button>
-        </div>
+        >
+          <ChevronRight className="h-6 w-6" />
+        </button>
+      </div>
       </div>
       {isFullscreen && (
         <FullscreenViewer

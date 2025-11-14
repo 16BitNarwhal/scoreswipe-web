@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ArrowRight, Bot, Camera, FileUp, Sparkles } from 'lucide-react';
+import { ArrowRight, Camera, FileUp, Sparkles } from 'lucide-react';
 
 const marketingSections = [
   {
@@ -17,21 +17,15 @@ const marketingSections = [
   {
     title: 'Local-first library',
     description:
-      'Your scores live securely on your device using IndexedDB with optional cloud sync.',
+      'Your scores live securely on your device using IndexedDB.',
     icon: Camera,
-  },
-  {
-    title: 'Guided onboarding',
-    description:
-      'Contextual walkthrough explains controls, calibration, and performance tips.',
-    icon: Bot,
   },
 ];
 
 const HomePage = () => (
-  <main className="flex flex-1 flex-col">
-    <section className="relative isolate overflow-hidden bg-brand-100 px-6 py-24 text-brand-500 md:px-12">
-      <div className="mx-auto flex max-w-6xl flex-col-reverse items-center gap-10 md:flex-row">
+  <main className="flex flex-1 flex-col min-h-screen">
+    <section className="relative isolate overflow-hidden bg-brand-100 px-6 py-24 text-brand-500 md:px-12 min-h-screen flex items-center">
+      <div className="mx-auto flex max-w-6xl flex-col-reverse items-center gap-10 md:flex-row w-full">
         <div className="w-full md:w-1/2">
           <h1 className="text-4xl font-bold tracking-tight text-brand-500 sm:text-5xl">
             ScoreSwipe Web
@@ -62,42 +56,6 @@ const HomePage = () => (
               ))}
             </div>
           </div>
-        </div>
-      </div>
-    </section>
-    <section className="bg-white px-6 py-24 text-brand-500 md:px-12">
-      <div className="mx-auto grid max-w-6xl gap-16 md:grid-cols-3">
-        <div className="md:col-span-1">
-          <h2 className="text-3xl font-semibold">Reimagining digital sheet music</h2>
-          <p className="mt-4 text-brand-500/80">
-            Every feature in ScoreSwipe Web is designed for practice rooms and stages alike. Start in
-            the library to organize scores, create new arrangements, and dial in gesture preferences.
-          </p>
-        </div>
-        <div className="md:col-span-2">
-          <ol className="space-y-6">
-            <li className="rounded-3xl border border-brand-100 bg-brand-50/80 p-6">
-              <h3 className="text-xl font-semibold">1. Calibrate & configure</h3>
-              <p className="mt-2 text-brand-500/80">
-                The onboarding flow walks through camera setup, neutral pose calibration, and
-                sensitivity adjustments before your first session.
-              </p>
-            </li>
-            <li className="rounded-3xl border border-brand-100 bg-brand-50/80 p-6">
-              <h3 className="text-xl font-semibold">2. Capture or upload scores</h3>
-              <p className="mt-2 text-brand-500/80">
-                Drag-and-drop PDFs, import photos, or snap pages from your device. Everything stores
-                locally, and you can export backups any time.
-              </p>
-            </li>
-            <li className="rounded-3xl border border-brand-100 bg-brand-50/80 p-6">
-              <h3 className="text-xl font-semibold">3. Perform with hands-free control</h3>
-              <p className="mt-2 text-brand-500/80">
-                Head tilt detection flips pages instantaneously, with keyboard and on-screen buttons
-                for redundancy when you need them.
-              </p>
-            </li>
-          </ol>
         </div>
       </div>
     </section>

@@ -30,5 +30,4 @@ export const getDefaultSettings = (): AppSettings => ({
     autoScroll: false,
     highlightCurrentBar: false,
   },
-  onboardingCompleted: false,
 });

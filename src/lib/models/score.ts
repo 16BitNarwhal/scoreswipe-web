@@ -38,5 +38,4 @@ export interface ViewerPreferences {
 export interface AppSettings {
   calibration: ScoreCalibrationSettings;
   viewer: ViewerPreferences;
-  onboardingCompleted: boolean;
 }

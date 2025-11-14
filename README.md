@@ -34,7 +34,6 @@ scoreswipe-web/
 - **Creation workflow** supporting PDFs, image uploads, and TODO hooks for camera capture and PDF rasterization.
 - **Viewer experience** with gesture overlay scaffolding, manual controls, and future-ready MediaPipe integration via `TiltDetector`.
 - **Settings** align with the original Flutter app—swipe mode, sensitivity, inversion, and viewer preferences.
-- **Onboarding** uses `react-joyride` for contextual tips.
 
 ## Roadmap
 

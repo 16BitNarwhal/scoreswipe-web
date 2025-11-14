@@ -56,34 +56,34 @@ const CameraOverlay = ({ sensitivity, invertDirection, swipeMode, onTiltLeft, on
 
       prevSettingsRef.current = { sensitivity, invertDirection };
 
-      const detector = new TiltDetector({
-        sensitivity,
-        invertDirection,
+    const detector = new TiltDetector({
+      sensitivity,
+      invertDirection,
         onTiltLeft: () => callbacksRef.current.onTiltLeft(),
         onTiltRight: () => callbacksRef.current.onTiltRight(),
-      });
-      detectorRef.current = detector;
+    });
+    detectorRef.current = detector;
 
-      const start = async () => {
+    const start = async () => {
         if (startingRef.current) return;
         startingRef.current = true;
-        setStatus('loading');
-        try {
-          await detector.start(video);
-          setStatus('ready');
-        } catch (error) {
+      setStatus('loading');
+      try {
+        await detector.start(video);
+        setStatus('ready');
+      } catch (error) {
           // Only log if it's not an AbortError (which is expected in StrictMode)
           if (error instanceof Error && error.name !== 'AbortError') {
-            // eslint-disable-next-line no-console
-            console.error(error);
+        // eslint-disable-next-line no-console
+        console.error(error);
           }
           setStatus('error');
         } finally {
           startingRef.current = false;
-        }
-      };
+      }
+    };
 
-      start();
+    start();
     }
 
     return () => {
