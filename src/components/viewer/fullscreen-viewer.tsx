@@ -36,11 +36,20 @@ const FullscreenViewer = ({ score, pageIndex, onPageChange, onClose }: Fullscree
     return () => window.removeEventListener('keydown', handler);
   }, [maxIndex, onClose, pageIndex, onPageChange, isTransitioning]);
 
-  // Prevent body scroll when fullscreen is open
+  // Prevent body scroll and remove margins when fullscreen is open
   useEffect(() => {
+    const originalOverflow = document.body.style.overflow;
+    const originalMargin = document.body.style.margin;
+    const htmlMargin = document.documentElement.style.margin;
+    
     document.body.style.overflow = 'hidden';
+    document.body.style.margin = '0';
+    document.documentElement.style.margin = '0';
+    
     return () => {
-      document.body.style.overflow = '';
+      document.body.style.overflow = originalOverflow;
+      document.body.style.margin = originalMargin;
+      document.documentElement.style.margin = htmlMargin;
     };
   }, []);
 
@@ -63,7 +72,7 @@ const FullscreenViewer = ({ score, pageIndex, onPageChange, onClose }: Fullscree
   return (
     <div
       ref={containerRef}
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black"
+      className="fixed inset-0 z-[100] m-0 flex items-center justify-center bg-black p-0"
       onClick={(e) => {
         // Close if clicking on background (not on image or controls)
         if (e.target === containerRef.current) {
@@ -87,7 +96,7 @@ const FullscreenViewer = ({ score, pageIndex, onPageChange, onClose }: Fullscree
       </div>
 
       {/* Image container */}
-      <div className="relative flex h-full w-full items-center justify-center overflow-hidden p-4">
+      <div className="relative flex h-full w-full items-center justify-center overflow-hidden">
         <div
           className="flex h-full transition-transform duration-500 ease-in-out"
           style={{
