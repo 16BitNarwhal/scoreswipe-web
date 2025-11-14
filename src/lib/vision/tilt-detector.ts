@@ -86,7 +86,7 @@ export class TiltDetector {
     }
   }
 
-  private getLargestFace(results: { faceLandmarks?: Array<Array<{ x: number; y: number; z?: number }>> }) {
+  private getLargestFace(results: any) {
     // Select face with largest bounding box area (matching old ScoreSwipe logic)
     if (!results.faceLandmarks || results.faceLandmarks.length === 0) return null;
     if (results.faceLandmarks.length === 1) return results.faceLandmarks[0];
@@ -97,8 +97,8 @@ export class TiltDetector {
 
     for (const face of results.faceLandmarks) {
       // Estimate bounding box from landmarks
-      const xs = face.map((p: { x: number; y: number; z?: number }) => p.x);
-      const ys = face.map((p: { x: number; y: number; z?: number }) => p.y);
+      const xs = face.map((p: any) => p.x);
+      const ys = face.map((p: any) => p.y);
       const width = Math.max(...xs) - Math.min(...xs);
       const height = Math.max(...ys) - Math.min(...ys);
       const area = width * height;
@@ -112,7 +112,7 @@ export class TiltDetector {
     return largestFace;
   }
 
-  private calculateRollAngle(landmarks: Array<{ x: number; y: number; z?: number }>): number {
+  private calculateRollAngle(landmarks: any[]): number {
     // Calculate roll angle from face landmarks
     // MediaPipe FaceLandmarker returns 468 landmarks
     if (!landmarks || landmarks.length < 468) return 0;

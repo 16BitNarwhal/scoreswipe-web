@@ -62,6 +62,37 @@ const PageViewer = ({ score, pageIndex, onPageChange }: PageViewerProps) => {
     dragStateRef.current = { dragStartX, dragOffset, pageIndex, maxIndex, isTransitioning };
   }, [dragStartX, dragOffset, pageIndex, maxIndex, isTransitioning]);
 
+  const handleDragMove = (e: TouchEvent | MouseEvent) => {
+    if (!isDragging) return;
+    e.preventDefault();
+    const currentX = getClientX(e);
+    const offset = currentX - dragStateRef.current.dragStartX;
+    setDragOffset(offset);
+  };
+
+  const handleDragEnd = () => {
+    if (!isDragging) return;
+    setIsDragging(false);
+    
+    const containerWidth = containerRef.current?.clientWidth ?? 1;
+    const threshold = containerWidth * 0.2; // 20% of container width
+    const currentOffset = dragStateRef.current.dragOffset;
+    const currentPageIndex = dragStateRef.current.pageIndex;
+    const currentMaxIndex = dragStateRef.current.maxIndex;
+    
+    if (Math.abs(currentOffset) > threshold) {
+      if (currentOffset > 0 && currentPageIndex > 0) {
+        // Swiped right, go to previous page
+        handlePrev();
+      } else if (currentOffset < 0 && currentPageIndex < currentMaxIndex) {
+        // Swiped left, go to next page
+        handleNext();
+      }
+    }
+    
+    setDragOffset(0);
+  };
+
   useEffect(() => {
     if (!isDragging) return;
 
@@ -76,13 +107,13 @@ const PageViewer = ({ score, pageIndex, onPageChange }: PageViewerProps) => {
     const handleEnd = () => {
       if (!isDragging) return;
       setIsDragging(false);
-
+      
       const containerWidth = containerRef.current?.clientWidth ?? 1;
       const threshold = containerWidth * 0.2;
       const currentOffset = dragStateRef.current.dragOffset;
       const currentPageIndex = dragStateRef.current.pageIndex;
       const currentMaxIndex = dragStateRef.current.maxIndex;
-
+      
       if (Math.abs(currentOffset) > threshold) {
         if (currentOffset > 0 && currentPageIndex > 0) {
           handlePrev();
@@ -90,7 +121,7 @@ const PageViewer = ({ score, pageIndex, onPageChange }: PageViewerProps) => {
           handleNext();
         }
       }
-
+      
       setDragOffset(0);
     };
 
@@ -109,13 +140,13 @@ const PageViewer = ({ score, pageIndex, onPageChange }: PageViewerProps) => {
 
   return (
     <>
-      <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-semibold text-brand-500">{score.name}</h1>
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold text-brand-500">{score.name}</h1>
           <div className="flex items-center gap-3">
-            <p className="text-sm text-brand-400">
-              Page {pageIndex + 1} / {score.pages.length}
-            </p>
+        <p className="text-sm text-brand-400">
+          Page {pageIndex + 1} / {score.pages.length}
+        </p>
             <button
               type="button"
               onClick={() => setIsFullscreen(true)}
@@ -144,24 +175,24 @@ const PageViewer = ({ score, pageIndex, onPageChange }: PageViewerProps) => {
             {score.pages.map((page, idx) => (
               <PageImage key={`${page.id || idx}-${score.id}`} page={page} index={idx} />
             ))}
-          </div>
-          <button
-            type="button"
-            onClick={handlePrev}
-            disabled={pageIndex === 0 || isTransitioning}
-            className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-white/80 p-2 text-brand-400 shadow transition-all hover:bg-white disabled:cursor-not-allowed disabled:opacity-40 sm:left-6 sm:p-3"
-          >
-            <ChevronLeft className="h-6 w-6" />
-          </button>
-          <button
-            type="button"
-            onClick={handleNext}
-            disabled={pageIndex === maxIndex || isTransitioning}
-            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-white/80 p-2 text-brand-400 shadow transition-all hover:bg-white disabled:cursor-not-allowed disabled:opacity-40 sm:right-6 sm:p-3"
-          >
-            <ChevronRight className="h-6 w-6" />
-          </button>
-        </div>
+      </div>
+        <button
+          type="button"
+          onClick={handlePrev}
+          disabled={pageIndex === 0 || isTransitioning}
+          className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-white/80 p-2 text-brand-400 shadow transition-all hover:bg-white disabled:cursor-not-allowed disabled:opacity-40 sm:left-6 sm:p-3"
+        >
+          <ChevronLeft className="h-6 w-6" />
+        </button>
+        <button
+          type="button"
+          onClick={handleNext}
+          disabled={pageIndex === maxIndex || isTransitioning}
+          className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-white/80 p-2 text-brand-400 shadow transition-all hover:bg-white disabled:cursor-not-allowed disabled:opacity-40 sm:right-6 sm:p-3"
+        >
+          <ChevronRight className="h-6 w-6" />
+        </button>
+      </div>
       </div>
       {isFullscreen && (
         <FullscreenViewer
@@ -197,7 +228,7 @@ const PageImage = ({ page, index }: { page: Score['pages'][0]; index: number }) 
     if (page?.imageBlob) {
       try {
         // Ensure it's a valid Blob
-        const blob = page.imageBlob instanceof Blob ? page.imageBlob : new Blob([page.imageBlob as BlobPart], { type: 'image/png' });
+        const blob = page.imageBlob instanceof Blob ? page.imageBlob : new Blob([page.imageBlob as any], { type: 'image/png' });
         const objectUrl = URL.createObjectURL(blob);
         blobRef.current = page.imageBlob;
         urlRef.current = objectUrl;
