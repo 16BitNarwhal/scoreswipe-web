@@ -102,6 +102,7 @@ const ViewerPageContent = () => {
         <CameraOverlay
           sensitivity={settings.calibration.sensitivity}
           invertDirection={settings.calibration.invertDirection}
+          swipeMode={settings.calibration.swipeMode}
           onTiltLeft={handleTiltLeft}
           onTiltRight={handleTiltRight}
         />

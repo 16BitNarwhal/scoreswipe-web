@@ -36,16 +36,6 @@ const SettingsPage = () => {
     });
   };
 
-  const handleViewerChange = (key: 'autoAdvance' | 'autoScroll' | 'highlightCurrentBar') => (
-    event: ChangeEvent<HTMLInputElement>,
-  ) => {
-    upsertSettings({
-      viewer: {
-        ...settings.viewer,
-        [key]: event.target.checked,
-      },
-    });
-  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -96,41 +86,6 @@ const SettingsPage = () => {
             Invert direction
           </label>
         </div>
-      </section>
-      <section className="rounded-3xl border border-brand-100 bg-white p-6 shadow-sm">
-        <h2 className="text-xl font-semibold text-brand-500">Viewer preferences</h2>
-        <ul className="mt-4 space-y-3 text-sm text-brand-400">
-          <li className="flex items-center gap-3">
-            <input
-              id="auto-advance"
-              type="checkbox"
-              checked={settings.viewer.autoAdvance}
-              onChange={handleViewerChange('autoAdvance')}
-              className="h-4 w-4 rounded border-brand-200 text-brand-400 focus:ring-brand-300"
-            />
-            <label htmlFor="auto-advance">Auto advance at end of page</label>
-          </li>
-          <li className="flex items-center gap-3">
-            <input
-              id="auto-scroll"
-              type="checkbox"
-              checked={settings.viewer.autoScroll}
-              onChange={handleViewerChange('autoScroll')}
-              className="h-4 w-4 rounded border-brand-200 text-brand-400 focus:ring-brand-300"
-            />
-            <label htmlFor="auto-scroll">Smooth scroll between pages</label>
-          </li>
-          <li className="flex items-center gap-3">
-            <input
-              id="highlight-bar"
-              type="checkbox"
-              checked={settings.viewer.highlightCurrentBar}
-              onChange={handleViewerChange('highlightCurrentBar')}
-              className="h-4 w-4 rounded border-brand-200 text-brand-400 focus:ring-brand-300"
-            />
-            <label htmlFor="highlight-bar">Highlight active measure</label>
-          </li>
-        </ul>
       </section>
     </div>
   );

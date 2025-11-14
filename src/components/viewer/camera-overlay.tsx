@@ -7,14 +7,15 @@ import { TiltDetector } from '@/lib/vision/tilt-detector';
 type CameraOverlayProps = {
   sensitivity: number;
   invertDirection: boolean;
+  swipeMode: 'tilt' | 'turn' | 'none';
   onTiltLeft: () => void;
   onTiltRight: () => void;
 };
 
-const CameraOverlay = ({ sensitivity, invertDirection, onTiltLeft, onTiltRight }: CameraOverlayProps) => {
+const CameraOverlay = ({ sensitivity, invertDirection, swipeMode, onTiltLeft, onTiltRight }: CameraOverlayProps) => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const detectorRef = useRef<TiltDetector | null>(null);
-  const [status, setStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
+  const [status, setStatus] = useState<'idle' | 'loading' | 'ready' | 'error' | 'disabled'>('idle');
   const startingRef = useRef(false);
   const callbacksRef = useRef({ onTiltLeft, onTiltRight });
   const prevSettingsRef = useRef({ sensitivity, invertDirection });
@@ -26,7 +27,19 @@ const CameraOverlay = ({ sensitivity, invertDirection, onTiltLeft, onTiltRight }
 
   useEffect(() => {
     const video = videoRef.current;
-    if (!video || startingRef.current) return;
+    if (!video) return;
+
+    // If swipeMode is 'none', disable gesture detection
+    if (swipeMode === 'none') {
+      if (detectorRef.current) {
+        detectorRef.current.stop();
+        detectorRef.current = null;
+      }
+      setStatus('disabled');
+      return;
+    }
+
+    if (startingRef.current) return;
 
     // Check if settings actually changed
     const settingsChanged = 
@@ -80,7 +93,7 @@ const CameraOverlay = ({ sensitivity, invertDirection, onTiltLeft, onTiltRight }
         detectorRef.current = null;
       }
     };
-  }, [invertDirection, sensitivity]);
+  }, [invertDirection, sensitivity, swipeMode]);
 
   return (
     <div className="flex flex-col gap-2">
@@ -91,6 +104,7 @@ const CameraOverlay = ({ sensitivity, invertDirection, onTiltLeft, onTiltRight }
             {status === 'ready' && 'Live'}
             {status === 'loading' && ' activating...'}
             {status === 'error' && ' permission denied'}
+            {status === 'disabled' && ' disabled'}
           </span>
         </div>
         <div className="mt-4 flex h-48 items-center justify-center overflow-hidden rounded-2xl bg-black/70">
