@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useMemo, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import PageViewer from '@/components/viewer/page-viewer';
 import CameraOverlay from '@/components/viewer/camera-overlay';
@@ -61,6 +61,18 @@ const ViewerPageContent = () => {
     return () => window.removeEventListener('keydown', handler);
   }, [activeScore?.pages.length]);
 
+  // Define callbacks before conditional returns (Rules of Hooks)
+  const handleTiltLeft = useCallback(() => {
+    setPageIndex((prev) => Math.max(prev - 1, 0));
+  }, []);
+
+  const handleTiltRight = useCallback(() => {
+    setPageIndex((prev) => {
+      const maxIndex = activeScore?.pages.length ? activeScore.pages.length - 1 : 0;
+      return Math.min(prev + 1, maxIndex);
+    });
+  }, [activeScore?.pages.length]);
+
   // Show loading state while scores are being loaded
   if (loading) {
     return (
@@ -82,14 +94,6 @@ const ViewerPageContent = () => {
       </div>
     );
   }
-
-  const handleTiltLeft = () => {
-    setPageIndex((prev) => Math.max(prev - 1, 0));
-  };
-
-  const handleTiltRight = () => {
-    setPageIndex((prev) => Math.min(prev + 1, activeScore.pages.length - 1));
-  };
 
   return (
     <div className="grid gap-6 lg:grid-cols-[2fr,1fr]">

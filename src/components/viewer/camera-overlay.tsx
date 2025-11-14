@@ -16,45 +16,62 @@ const CameraOverlay = ({ sensitivity, invertDirection, onTiltLeft, onTiltRight }
   const detectorRef = useRef<TiltDetector | null>(null);
   const [status, setStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
   const startingRef = useRef(false);
+  const callbacksRef = useRef({ onTiltLeft, onTiltRight });
+  const prevSettingsRef = useRef({ sensitivity, invertDirection });
+
+  // Update callback refs when they change (without triggering re-initialization)
+  useEffect(() => {
+    callbacksRef.current = { onTiltLeft, onTiltRight };
+  }, [onTiltLeft, onTiltRight]);
 
   useEffect(() => {
     const video = videoRef.current;
     if (!video || startingRef.current) return;
 
-    // Clean up previous detector
-    if (detectorRef.current) {
-      detectorRef.current.stop();
-      detectorRef.current = null;
-    }
+    // Check if settings actually changed
+    const settingsChanged = 
+      prevSettingsRef.current.sensitivity !== sensitivity ||
+      prevSettingsRef.current.invertDirection !== invertDirection;
 
-    const detector = new TiltDetector({
-      sensitivity,
-      invertDirection,
-      onTiltLeft,
-      onTiltRight,
-    });
-    detectorRef.current = detector;
-
-    const start = async () => {
-      if (startingRef.current) return;
-      startingRef.current = true;
-      setStatus('loading');
-      try {
-        await detector.start(video);
-        setStatus('ready');
-      } catch (error) {
-        // Only log if it's not an AbortError (which is expected in StrictMode)
-        if (error instanceof Error && error.name !== 'AbortError') {
-          // eslint-disable-next-line no-console
-          console.error(error);
-        }
-        setStatus('error');
-      } finally {
-        startingRef.current = false;
+    // Only recreate detector if settings changed or if it doesn't exist
+    if (!detectorRef.current || settingsChanged) {
+      // Clean up previous detector
+      if (detectorRef.current) {
+        detectorRef.current.stop();
+        detectorRef.current = null;
       }
-    };
 
-    start();
+      prevSettingsRef.current = { sensitivity, invertDirection };
+
+      const detector = new TiltDetector({
+        sensitivity,
+        invertDirection,
+        onTiltLeft: () => callbacksRef.current.onTiltLeft(),
+        onTiltRight: () => callbacksRef.current.onTiltRight(),
+      });
+      detectorRef.current = detector;
+
+      const start = async () => {
+        if (startingRef.current) return;
+        startingRef.current = true;
+        setStatus('loading');
+        try {
+          await detector.start(video);
+          setStatus('ready');
+        } catch (error) {
+          // Only log if it's not an AbortError (which is expected in StrictMode)
+          if (error instanceof Error && error.name !== 'AbortError') {
+            // eslint-disable-next-line no-console
+            console.error(error);
+          }
+          setStatus('error');
+        } finally {
+          startingRef.current = false;
+        }
+      };
+
+      start();
+    }
 
     return () => {
       startingRef.current = false;
@@ -63,7 +80,7 @@ const CameraOverlay = ({ sensitivity, invertDirection, onTiltLeft, onTiltRight }
         detectorRef.current = null;
       }
     };
-  }, [invertDirection, onTiltLeft, onTiltRight, sensitivity]);
+  }, [invertDirection, sensitivity]);
 
   return (
     <div className="flex flex-col gap-2">
@@ -77,7 +94,7 @@ const CameraOverlay = ({ sensitivity, invertDirection, onTiltLeft, onTiltRight }
           </span>
         </div>
         <div className="mt-4 flex h-48 items-center justify-center overflow-hidden rounded-2xl bg-black/70">
-          <video ref={videoRef} className="h-full w-full object-cover" playsInline muted />
+          <video ref={videoRef} className="h-full w-full scale-x-[-1] object-cover" playsInline muted />
           {status === 'loading' && <Loader2 className="h-8 w-8 animate-spin text-white" />}
           {status === 'error' && <CameraOff className="h-8 w-8 text-red-400" />}
         </div>
