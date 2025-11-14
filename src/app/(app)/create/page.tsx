@@ -13,10 +13,11 @@ import { getFolderTree, getFolderPathLabel } from '@/lib/utils/folders';
 
 const CreatePage = () => {
   const router = useRouter();
-  const { addScore, folders, currentFolderId } = useScoreStore((state) => ({
+  const { addScore, folders, currentFolderId, selectScore } = useScoreStore((state) => ({
     addScore: state.addScore,
     folders: state.folders,
     currentFolderId: state.currentFolderId,
+    selectScore: state.selectScore,
   }));
   const [name, setName] = useState('');
   const [pages, setPages] = useState<ScorePage[]>([]);
@@ -98,7 +99,8 @@ const CreatePage = () => {
         folderId: folderId ?? null,
         thumbnail,
       });
-      router.push(`/viewer/${id}`);
+      selectScore(id);
+      router.push('/viewer');
     } catch (err) {
       setError((err as Error).message);
     } finally {

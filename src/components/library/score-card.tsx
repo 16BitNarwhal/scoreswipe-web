@@ -57,7 +57,7 @@ const ScoreCard = ({ score, onDropScore }: ScoreCardProps) => {
 
   const handleOpen = () => {
     selectScore(score.id);
-    router.push(`/viewer/${score.id}`);
+    router.push('/viewer');
   };
 
   useEffect(() => {

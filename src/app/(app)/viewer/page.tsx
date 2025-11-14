@@ -1,7 +1,7 @@
 'use client';
 
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import PageViewer from '@/components/viewer/page-viewer';
 import CameraOverlay from '@/components/viewer/camera-overlay';
 import ViewerSettings from '@/components/viewer/viewer-settings';
@@ -10,38 +10,30 @@ import { AlertTriangle } from 'lucide-react';
 
 const ViewerPageContent = () => {
   const router = useRouter();
-  const params = useParams();
-  const scoreId = params?.id as string | undefined;
-  const { scores, loading, selectScore, settings } = useScoreStore((state) => ({
+  const { scores, loading, selectedScoreId, settings } = useScoreStore((state) => ({
     scores: state.scores,
     loading: state.loading,
-    selectScore: state.selectScore,
+    selectedScoreId: state.selectedScoreId,
     settings: state.settings,
   }));
   const [pageIndex, setPageIndex] = useState(0);
 
   const activeScore = useMemo(() => {
-    if (!scoreId) return undefined;
-    return scores.find((score) => score.id === scoreId);
-  }, [scoreId, scores]);
-
-  useEffect(() => {
-    if (scoreId) {
-      selectScore(scoreId);
-    }
-  }, [scoreId, selectScore]);
+    if (!selectedScoreId) return undefined;
+    return scores.find((score) => score.id === selectedScoreId);
+  }, [selectedScoreId, scores]);
 
   useEffect(() => {
     // Only check for score existence after loading is complete
     if (!loading) {
       if (!scores.length) {
         router.push('/create');
-      } else if (scoreId && !activeScore) {
-        // Score not found, redirect to library
+      } else if (!selectedScoreId || !activeScore) {
+        // No score selected or score not found, redirect to library
         router.push('/library');
       }
     }
-  }, [router, scores.length, scoreId, activeScore, loading]);
+  }, [router, scores.length, selectedScoreId, activeScore, loading]);
 
   useEffect(() => {
     setPageIndex(0);

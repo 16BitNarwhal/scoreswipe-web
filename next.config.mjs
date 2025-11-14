@@ -1,6 +1,5 @@
-import { createSecureHeaders } from "next-secure-headers";
-
 const nextConfig = {
+  output: 'export',
   webpack: (config) => {
     config.resolve.fallback = {
       ...config.resolve.fallback,
@@ -8,15 +7,6 @@ const nextConfig = {
       path: false,
     };
     return config;
-  },
-  headers: async () => {
-    const headers = createSecureHeaders();
-    return [
-      {
-        source: "/(.*)",
-        headers,
-      },
-    ];
   },
 };
 
