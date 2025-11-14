@@ -15,7 +15,6 @@ export class TiltDetector {
   private previousAngle = 0;
   private previousTime = Date.now();
   private turningPage = false;
-  private neutralAngle = 0;
   private initialized = false;
 
   constructor(private readonly options: TiltDetectorOptions) { }
@@ -42,11 +41,6 @@ export class TiltDetector {
         await this.initializeFaceLandmarker();
         this.initialized = true;
       }
-
-      // Calibrate neutral position after a short delay
-      setTimeout(() => {
-        this.calibrateNeutral(videoElement);
-      }, 1000);
 
       this.loop(videoElement);
     } catch (error) {
@@ -92,25 +86,30 @@ export class TiltDetector {
     }
   }
 
-  private calibrateNeutral(videoElement: HTMLVideoElement) {
-    // Capture a few frames to establish neutral position
-    let samples = 0;
-    const maxSamples = 10;
-    const sampleInterval = setInterval(() => {
-      if (!this.faceLandmarker || samples >= maxSamples) {
-        clearInterval(sampleInterval);
-        return;
-      }
+  private getLargestFace(results: any) {
+    // Select face with largest bounding box area (matching old ScoreSwipe logic)
+    if (!results.faceLandmarks || results.faceLandmarks.length === 0) return null;
+    if (results.faceLandmarks.length === 1) return results.faceLandmarks[0];
 
-      const results = this.faceLandmarker.detectForVideo(videoElement, Date.now());
-      if (results.faceLandmarks && results.faceLandmarks.length > 0) {
-        const face = results.faceLandmarks[0];
-        // Use roll angle (Z-axis rotation) for tilt detection
-        const roll = this.calculateRollAngle(face);
-        this.neutralAngle = (this.neutralAngle * samples + roll) / (samples + 1);
-        samples++;
+    // Calculate bounding box areas and select largest
+    let largestFace = results.faceLandmarks[0];
+    let largestArea = 0;
+
+    for (const face of results.faceLandmarks) {
+      // Estimate bounding box from landmarks
+      const xs = face.map((p: any) => p.x);
+      const ys = face.map((p: any) => p.y);
+      const width = Math.max(...xs) - Math.min(...xs);
+      const height = Math.max(...ys) - Math.min(...ys);
+      const area = width * height;
+
+      if (area > largestArea) {
+        largestArea = area;
+        largestFace = face;
       }
-    }, 100);
+    }
+
+    return largestFace;
   }
 
   private calculateRollAngle(landmarks: any[]): number {
@@ -177,55 +176,63 @@ export class TiltDetector {
     try {
       const results = this.faceLandmarker.detectForVideo(videoElement, now);
 
-      if (results.faceLandmarks && results.faceLandmarks.length > 0) {
-        const face = results.faceLandmarks[0];
-        const roll = this.calculateRollAngle(face);
-
-        // Only process if we have a valid roll angle
-        if (roll === 0 && this.previousAngle === 0) {
-          // No face detected or invalid angle, skip
-          this.rafId = requestAnimationFrame(() => this.loop(videoElement));
-          return;
-        }
-
-        const relativeAngle = roll - this.neutralAngle;
-
-        // Calculate threshold based on sensitivity (higher sensitivity = lower threshold)
-        // Sensitivity 0 = 15 degree threshold, Sensitivity 1 = 0 degree threshold
-        const threshold = (1 - this.options.sensitivity) * 15; // Range: 0-15 degrees
-
-        // Calculate angular speed to prevent false triggers
-        const timeDelta = now - this.previousTime;
-        const angleDelta = Math.abs(relativeAngle - this.previousAngle);
-        const angularSpeed = timeDelta > 0 ? angleDelta / timeDelta : 0;
-
-        // Only trigger if movement is significant and fast enough
-        // Lower angular speed threshold to be more responsive
-        if (angularSpeed > 0.005 && !this.turningPage) {
-          if (relativeAngle > threshold) {
-            // Tilted right (head tilted to viewer's right)
-            // Since video is flipped, this appears as left tilt on screen
-            this.options.invertDirection ? this.options.onTiltLeft() : this.options.onTiltRight();
-            this.turningPage = true;
-          } else if (relativeAngle < -threshold) {
-            // Tilted left (head tilted to viewer's left)
-            // Since video is flipped, this appears as right tilt on screen
-            this.options.invertDirection ? this.options.onTiltRight() : this.options.onTiltLeft();
-            this.turningPage = true;
-          }
-        }
-
-        // Reset turning flag when head returns to neutral
-        if (Math.abs(relativeAngle) < threshold * 0.6 && this.turningPage) {
-          this.turningPage = false;
-        }
-
-        this.previousAngle = relativeAngle;
-        this.previousTime = now;
-      } else {
+      const face = this.getLargestFace(results);
+      if (!face) {
         // No face detected - reset state
         this.previousAngle = 0;
+        this.rafId = requestAnimationFrame(() => this.loop(videoElement));
+        return;
       }
+
+      // Calculate roll angle (Z-axis rotation) - matching headEulerAngleZ from old ScoreSwipe
+      const rot = this.calculateRollAngle(face);
+
+      // If angle is null/invalid, skip
+      if (rot === 0 && this.previousAngle === 0) {
+        this.rafId = requestAnimationFrame(() => this.loop(videoElement));
+        return;
+      }
+
+      // Calculate threshold: (100 - sensitivity) / 100 * 40
+      // Sensitivity is 0-1 in our system, so convert to 0-100 range first
+      const sensitivityPercent = this.options.sensitivity * 100;
+      const threshold = ((100 - sensitivityPercent) / 100) * 40;
+
+      // Calculate angular speed: abs((rot - previousAngle) / timeDelta)
+      const timeDelta = now - this.previousTime;
+      const angularSpeed = timeDelta > 0 ? Math.abs((rot - this.previousAngle) / timeDelta) : 0;
+
+      // Exact logic from old ScoreSwipe:
+      // if (rot > threshold) {
+      //   if (!__turningPage && angularSpeed > 0.01 && angularSpeed > 0.01) {
+      //     (Config.invertDirection) ? previousPage() : nextPage();
+      //     __turningPage = true;
+      //   }
+      // } else if (rot < -threshold) {
+      //   if (!__turningPage && angularSpeed > 0.01 && angularSpeed > 0.01) {
+      //     (Config.invertDirection) ? nextPage() : previousPage();
+      //     __turningPage = true;
+      //   }
+      // } else if (rot.abs() < threshold * 0.6 && __turningPage) {
+      //   __turningPage = false;
+      // }
+
+      if (rot > threshold) {
+        if (!this.turningPage && angularSpeed > 0.01) {
+          this.options.invertDirection ? this.options.onTiltLeft() : this.options.onTiltRight();
+          this.turningPage = true;
+        }
+      } else if (rot < -threshold) {
+        if (!this.turningPage && angularSpeed > 0.01) {
+          this.options.invertDirection ? this.options.onTiltRight() : this.options.onTiltLeft();
+          this.turningPage = true;
+        }
+      } else if (Math.abs(rot) < threshold * 0.6 && this.turningPage) {
+        this.turningPage = false;
+      }
+
+      this.previousAngle = rot;
+      this.previousTime = now;
     } catch (error) {
       // Silently handle processing errors
     }
