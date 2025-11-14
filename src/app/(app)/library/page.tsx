@@ -8,8 +8,59 @@ import { SpotlightSearch } from '@/components/library/spotlight-search';
 import FolderGrid from '@/components/library/folder-grid';
 import { getChildFolders, getFolderAncestors } from '@/lib/utils/folders';
 
+const DropZone = ({
+  onDropScore,
+  currentFolderId,
+}: {
+  onDropScore: (scoreId: string, folderId: string | null) => void;
+  currentFolderId: string | null;
+}) => {
+  const [isDragOver, setIsDragOver] = useState(false);
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'move';
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+    const scoreId = e.dataTransfer.getData('application/score-id') || e.dataTransfer.getData('text/plain');
+    if (scoreId && currentFolderId) {
+      // Only allow dropping out if we're inside a folder
+      onDropScore(scoreId, null);
+    }
+  };
+
+  if (!currentFolderId) return null;
+
+  return (
+    <div
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+      className={`rounded-2xl border-2 border-dashed p-4 text-center transition ${
+        isDragOver
+          ? 'border-brand-400 bg-brand-50'
+          : 'border-brand-200 bg-transparent'
+      }`}
+    >
+      <p className="text-sm text-brand-400">
+        {isDragOver ? 'Drop here to move out of folder' : 'Drag scores here to move out of folder'}
+      </p>
+    </div>
+  );
+};
+
 const LibraryPage = () => {
-  const { scores, folders, loading, initialize, currentFolderId, setCurrentFolder, createFolder } =
+  const { scores, folders, loading, initialize, currentFolderId, setCurrentFolder, createFolder, updateScore } =
     useScoreStore((state) => ({
       scores: state.scores,
       folders: state.folders,
@@ -18,6 +69,7 @@ const LibraryPage = () => {
       currentFolderId: state.currentFolderId,
       setCurrentFolder: state.setCurrentFolder,
       createFolder: state.createFolder,
+      updateScore: state.updateScore,
     }));
   const [query, setQuery] = useState('');
   const [favoritesOnly, setFavoritesOnly] = useState(false);
@@ -76,6 +128,14 @@ const LibraryPage = () => {
     }
   };
 
+  const handleDropScore = async (scoreId: string, folderId: string | null) => {
+    try {
+      await updateScore(scoreId, { folderId });
+    } catch (error) {
+      setFolderError((error as Error).message);
+    }
+  };
+
   const emptyMessage =
     childFolders.length > 0
       ? 'This folder has no scores yet. Add or move scores into it to get started.'
@@ -116,10 +176,11 @@ const LibraryPage = () => {
       {childFolders.length > 0 && (
         <section className="flex flex-col gap-3">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-brand-300">Folders</h2>
-          <FolderGrid folders={childFolders} onOpen={(id) => setCurrentFolder(id)} />
+          <FolderGrid folders={childFolders} onOpen={(id) => setCurrentFolder(id)} onDropScore={handleDropScore} />
         </section>
       )}
       <SpotlightSearch value={query} onChange={setQuery} onSortChange={setSort} sort={sort} />
+      <DropZone onDropScore={handleDropScore} currentFolderId={currentFolderId} />
       <ScoreGrid scores={filtered} loading={loading} emptyMessage={emptyMessage} />
     </div>
   );

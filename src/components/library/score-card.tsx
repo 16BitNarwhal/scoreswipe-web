@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Star } from 'lucide-react';
+import { MoreVertical, Star, Trash2, Edit2 } from 'lucide-react';
 import { useScoreStore } from '@/store/score-store';
 import { generateThumbnail } from '@/lib/pdf/pdf-utils';
 import type { Score } from '@/lib/models/score';
@@ -16,10 +16,24 @@ const ScoreCard = ({ score }: ScoreCardProps) => {
   const toggleFavorite = useScoreStore((state) => state.toggleFavorite);
   const selectScore = useScoreStore((state) => state.selectScore);
   const updateScore = useScoreStore((state) => state.updateScore);
+  const deleteScore = useScoreStore((state) => state.deleteScore);
   const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(
     score.thumbnail && score.thumbnail.trim() ? score.thumbnail : null,
   );
   const [thumbnailLoading, setThumbnailLoading] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedName, setEditedName] = useState(score.name);
+  const [showMenu, setShowMenu] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const nameInputRef = useRef<HTMLInputElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Sync editedName when score.name changes externally
+  useEffect(() => {
+    if (!isEditing) {
+      setEditedName(score.name);
+    }
+  }, [score.name, isEditing]);
 
   // Generate thumbnail on-the-fly if missing
   useEffect(() => {
@@ -45,23 +59,95 @@ const ScoreCard = ({ score }: ScoreCardProps) => {
     router.push(`/viewer/${score.id}`);
   };
 
+  useEffect(() => {
+    if (isEditing && nameInputRef.current) {
+      nameInputRef.current.focus();
+      nameInputRef.current.select();
+    }
+  }, [isEditing]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowMenu(false);
+      }
+    };
+    if (showMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showMenu]);
+
   const handleFavorite = async (event: React.MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation();
     await toggleFavorite(score.id);
   };
 
+  const handleEdit = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    setShowMenu(false);
+    setIsEditing(true);
+    setEditedName(score.name);
+  };
+
+  const handleSaveEdit = async () => {
+    const trimmed = editedName.trim();
+    if (trimmed && trimmed !== score.name) {
+      await updateScore(score.id, { name: trimmed });
+    }
+    setIsEditing(false);
+  };
+
+  const handleCancelEdit = () => {
+    setEditedName(score.name);
+    setIsEditing(false);
+  };
+
+  const handleDelete = async (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    setShowMenu(false);
+    if (window.confirm(`Are you sure you want to delete "${score.name}"?`)) {
+      await deleteScore(score.id);
+    }
+  };
+
+  const handleDragStart = (e: React.DragEvent) => {
+    setIsDragging(true);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', score.id);
+    e.dataTransfer.setData('application/score-id', score.id);
+  };
+
+  const handleDragEnd = () => {
+    setIsDragging(false);
+  };
+
   return (
     <div
-      onClick={handleOpen}
+      draggable
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+      onClick={(e) => {
+        if (!showMenu && !isEditing) {
+          handleOpen();
+        }
+      }}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          handleOpen();
+          if (!showMenu && !isEditing) {
+            e.preventDefault();
+            handleOpen();
+          }
+        }
+        if (e.key === 'Escape' && isEditing) {
+          handleCancelEdit();
         }
       }}
       role="button"
       tabIndex={0}
-      className="group flex cursor-pointer flex-col overflow-hidden rounded-3xl border border-brand-100 bg-white text-left shadow-sm transition hover:-translate-y-1 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-brand-300"
+      className={`group flex cursor-pointer flex-col overflow-hidden rounded-3xl border border-brand-100 bg-white text-left shadow-sm transition hover:-translate-y-1 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-brand-300 ${
+        isDragging ? 'opacity-50' : ''
+      }`}
     >
       <div className="relative h-48 w-full overflow-hidden bg-brand-50">
         {thumbnailUrl ? (
@@ -86,21 +172,74 @@ const ScoreCard = ({ score }: ScoreCardProps) => {
         <div className="absolute left-4 top-4 flex items-center gap-2 rounded-full bg-white/80 px-3 py-1 text-xs font-medium text-brand-400">
           {score.pages.length} page{score.pages.length === 1 ? '' : 's'}
         </div>
-        <button
-          type="button"
-          onClick={handleFavorite}
-          className={`absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full border bg-white/80 transition ${
-            score.favorite
-              ? 'border-brand-300 text-brand-400'
-              : 'border-transparent text-brand-200 hover:text-brand-300'
-          }`}
-        >
-          <Star className={score.favorite ? 'fill-current' : ''} />
-        </button>
+        <div className="absolute right-4 top-4 flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleFavorite}
+            className={`flex h-10 w-10 items-center justify-center rounded-full border bg-white/80 transition ${
+              score.favorite
+                ? 'border-brand-300 text-brand-400'
+                : 'border-transparent text-brand-200 hover:text-brand-300'
+            }`}
+          >
+            <Star className={score.favorite ? 'fill-current' : ''} />
+          </button>
+          <div className="relative" ref={menuRef}>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowMenu(!showMenu);
+              }}
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-transparent bg-white/80 text-brand-300 transition hover:border-brand-200 hover:text-brand-400"
+            >
+              <MoreVertical className="h-5 w-5" />
+            </button>
+            {showMenu && (
+              <div className="absolute right-0 top-12 z-10 min-w-[160px] rounded-2xl border border-brand-100 bg-white shadow-lg">
+                <button
+                  type="button"
+                  onClick={handleEdit}
+                  className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-brand-500 transition hover:bg-brand-50 first:rounded-t-2xl last:rounded-b-2xl"
+                >
+                  <Edit2 className="h-4 w-4" />
+                  Edit name
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-red-500 transition hover:bg-red-50 first:rounded-t-2xl last:rounded-b-2xl"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Delete
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
       <div className="flex flex-1 flex-col gap-2 p-5">
         <div className="flex items-start justify-between">
-          <h3 className="text-lg font-semibold text-brand-500">{score.name}</h3>
+          {isEditing ? (
+            <input
+              ref={nameInputRef}
+              type="text"
+              value={editedName}
+              onChange={(e) => setEditedName(e.target.value)}
+              onBlur={handleSaveEdit}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  handleSaveEdit();
+                } else if (e.key === 'Escape') {
+                  handleCancelEdit();
+                }
+              }}
+              onClick={(e) => e.stopPropagation()}
+              className="flex-1 rounded-lg border border-brand-300 bg-white px-2 py-1 text-lg font-semibold text-brand-500 focus:border-brand-400 focus:outline-none"
+            />
+          ) : (
+            <h3 className="text-lg font-semibold text-brand-500">{score.name}</h3>
+          )}
         </div>
         <p className="text-sm text-brand-400">
           Updated {new Date(score.updatedAt).toLocaleDateString()} · Source {score.source}
