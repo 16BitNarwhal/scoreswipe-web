@@ -112,3 +112,68 @@ export const pdfToPages = async (file: File): Promise<ScorePage[]> => {
 
   return pages;
 };
+
+export const generateThumbnail = async (blob: Blob, maxSize: number = 300): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(blob);
+    
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      
+      // Calculate thumbnail dimensions maintaining aspect ratio
+      let width = img.width;
+      let height = img.height;
+      
+      if (width > height) {
+        if (width > maxSize) {
+          height = (height * maxSize) / width;
+          width = maxSize;
+        }
+      } else {
+        if (height > maxSize) {
+          width = (width * maxSize) / height;
+          height = maxSize;
+        }
+      }
+      
+      // Create canvas and draw resized image
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      
+      if (!ctx) {
+        reject(new Error('Could not get canvas context'));
+        return;
+      }
+      
+      ctx.drawImage(img, 0, 0, width, height);
+      
+      // Convert to data URL
+      canvas.toBlob(
+        (thumbnailBlob) => {
+          if (!thumbnailBlob) {
+            reject(new Error('Failed to create thumbnail'));
+            return;
+          }
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            resolve(reader.result as string);
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(thumbnailBlob);
+        },
+        'image/jpeg',
+        0.85,
+      );
+    };
+    
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error('Failed to load image for thumbnail'));
+    };
+    
+    img.src = objectUrl;
+  });
+};

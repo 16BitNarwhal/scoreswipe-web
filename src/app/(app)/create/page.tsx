@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import type { ChangeEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import { imagesToPages, pdfToPages } from '@/lib/pdf/pdf-utils';
+import { imagesToPages, pdfToPages, generateThumbnail } from '@/lib/pdf/pdf-utils';
 import { useScoreStore } from '@/store/score-store';
 import type { ScorePage, ScoreSource } from '@/lib/models/score';
 import { Camera, FileImage, FileText, Loader2, Trash } from 'lucide-react';
@@ -61,13 +61,24 @@ const CreatePage = () => {
     setIsBusy(true);
     setError(undefined);
     try {
+      // Generate thumbnail from first page
+      let thumbnail: string | undefined;
+      if (pages.length > 0 && pages[0].imageBlob) {
+        try {
+          thumbnail = await generateThumbnail(pages[0].imageBlob);
+        } catch (err) {
+          console.warn('Failed to generate thumbnail:', err);
+          // Continue without thumbnail
+        }
+      }
+      
       const id = await addScore({
         name: name.trim(),
         favorite: false,
         tags: tags.split(',').map((tag) => tag.trim()).filter(Boolean),
         pages,
         source,
-        thumbnail: undefined,
+        thumbnail,
       });
       router.push(`/viewer?id=${id}`);
     } catch (err) {

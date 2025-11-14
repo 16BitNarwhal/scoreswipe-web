@@ -1,9 +1,10 @@
 'use client';
 
-import Image from 'next/image';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Star } from 'lucide-react';
 import { useScoreStore } from '@/store/score-store';
+import { generateThumbnail } from '@/lib/pdf/pdf-utils';
 import type { Score } from '@/lib/models/score';
 
 interface ScoreCardProps {
@@ -14,6 +15,30 @@ const ScoreCard = ({ score }: ScoreCardProps) => {
   const router = useRouter();
   const toggleFavorite = useScoreStore((state) => state.toggleFavorite);
   const selectScore = useScoreStore((state) => state.selectScore);
+  const updateScore = useScoreStore((state) => state.updateScore);
+  const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(
+    score.thumbnail && score.thumbnail.trim() ? score.thumbnail : null,
+  );
+  const [thumbnailLoading, setThumbnailLoading] = useState(false);
+
+  // Generate thumbnail on-the-fly if missing
+  useEffect(() => {
+    if (!thumbnailUrl && score.pages.length > 0 && score.pages[0].imageBlob) {
+      setThumbnailLoading(true);
+      generateThumbnail(score.pages[0].imageBlob)
+        .then((thumb) => {
+          setThumbnailUrl(thumb);
+          // Save thumbnail to score for future use
+          updateScore(score.id, { thumbnail: thumb }).catch(console.error);
+        })
+        .catch((err) => {
+          console.warn('Failed to generate thumbnail:', err);
+        })
+        .finally(() => {
+          setThumbnailLoading(false);
+        });
+    }
+  }, [score.id, score.pages, thumbnailUrl, updateScore]);
 
   const handleOpen = () => {
     selectScore(score.id);
@@ -26,19 +51,33 @@ const ScoreCard = ({ score }: ScoreCardProps) => {
   };
 
   return (
-    <button
-      type="button"
+    <div
       onClick={handleOpen}
-      className="group flex flex-col overflow-hidden rounded-3xl border border-brand-100 bg-white text-left shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          handleOpen();
+        }
+      }}
+      role="button"
+      tabIndex={0}
+      className="group flex cursor-pointer flex-col overflow-hidden rounded-3xl border border-brand-100 bg-white text-left shadow-sm transition hover:-translate-y-1 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-brand-300"
     >
       <div className="relative h-48 w-full overflow-hidden bg-brand-50">
-        {score.thumbnail ? (
-          <Image
-            src={score.thumbnail}
+        {thumbnailUrl ? (
+          <img
+            src={thumbnailUrl}
             alt={`${score.name} thumbnail`}
-            fill
-            className="object-cover transition duration-500 group-hover:scale-105"
+            className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+            onError={() => {
+              console.warn('Thumbnail image failed to load for score:', score.id);
+              setThumbnailUrl(null);
+            }}
           />
+        ) : thumbnailLoading ? (
+          <div className="flex h-full items-center justify-center bg-brand-100">
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-brand-300 border-t-transparent" />
+          </div>
         ) : (
           <div className="flex h-full items-center justify-center text-brand-200">
             No preview available
@@ -74,7 +113,7 @@ const ScoreCard = ({ score }: ScoreCardProps) => {
           ))}
         </div>
       </div>
-    </button>
+    </div>
   );
 };
 
