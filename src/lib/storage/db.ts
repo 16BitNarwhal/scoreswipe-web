@@ -21,12 +21,13 @@ export class ScoreSwipeDatabase extends Dexie {
         folders: '&id, name, parentId, updatedAt',
       })
       .upgrade(async (transaction) => {
-        await transaction.table('scores').toCollection().modify((score: any) => {
-          if (!('folderId' in score)) {
-            score.folderId = null;
+        await transaction.table('scores').toCollection().modify((score: unknown) => {
+          const scoreRecord = score as Partial<Score> & { folderId?: string | null; tags?: unknown };
+          if (!('folderId' in scoreRecord)) {
+            scoreRecord.folderId = null;
           }
-          if ('tags' in score) {
-            delete score.tags;
+          if ('tags' in scoreRecord) {
+            delete scoreRecord.tags;
           }
         });
       });

@@ -41,7 +41,7 @@ export const importLibraryBackup = async (file: File) => {
   }
 
   const normalizedScores: Score[] = backup.scores.map((score) => {
-    const { tags, folderId, ...rest } = score;
+    const { folderId, ...rest } = score;
     return {
       ...rest,
       folderId: folderId ?? null,

@@ -37,7 +37,7 @@ const PageThumbnail = ({ page }: PageThumbnailProps) => {
         blob = page.imageBlob;
       } else {
         // Try to reconstruct from array buffer if needed
-        blob = new Blob([page.imageBlob as any], { type: 'image/png' });
+        blob = new Blob([page.imageBlob as BlobPart], { type: 'image/png' });
       }
 
       const objectUrl = URL.createObjectURL(blob);
