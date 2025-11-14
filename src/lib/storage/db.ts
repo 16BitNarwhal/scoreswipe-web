@@ -1,10 +1,12 @@
 import Dexie from 'dexie';
 import type { Table } from 'dexie';
 import type { AppSettings, Score } from '@/lib/models/score';
+import type { Folder } from '@/lib/models/folder';
 
 export class ScoreSwipeDatabase extends Dexie {
   scores!: Table<Score>;
   settings!: Table<AppSettings & { id?: number }>;
+  folders!: Table<Folder>;
 
   constructor() {
     super('scoreswipe');
@@ -12,6 +14,22 @@ export class ScoreSwipeDatabase extends Dexie {
       scores: '&id, name, favorite, updatedAt',
       settings: '++id',
     });
+    this.version(2)
+      .stores({
+        scores: '&id, name, favorite, updatedAt, folderId',
+        settings: '++id',
+        folders: '&id, name, parentId, updatedAt',
+      })
+      .upgrade(async (transaction) => {
+        await transaction.table('scores').toCollection().modify((score: any) => {
+          if (!('folderId' in score)) {
+            score.folderId = null;
+          }
+          if ('tags' in score) {
+            delete score.tags;
+          }
+        });
+      });
   }
 }
 

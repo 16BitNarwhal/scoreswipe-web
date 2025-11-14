@@ -13,7 +13,7 @@ export interface Score {
   name: string;
   pages: ScorePage[];
   favorite: boolean;
-  tags: string[];
+  folderId: string | null;
   source: ScoreSource;
   createdAt: string;
   updatedAt: string;

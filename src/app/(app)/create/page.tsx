@@ -8,18 +8,28 @@ import { useScoreStore } from '@/store/score-store';
 import type { ScorePage, ScoreSource } from '@/lib/models/score';
 import { Camera, FileImage, FileText, Loader2, Trash } from 'lucide-react';
 import PageThumbnail from '@/components/create/page-thumbnail';
+import { getFolderTree, getFolderPathLabel } from '@/lib/utils/folders';
 
 const CreatePage = () => {
   const router = useRouter();
-  const addScore = useScoreStore((state) => state.addScore);
+  const { addScore, folders, currentFolderId } = useScoreStore((state) => ({
+    addScore: state.addScore,
+    folders: state.folders,
+    currentFolderId: state.currentFolderId,
+  }));
   const [name, setName] = useState('');
   const [pages, setPages] = useState<ScorePage[]>([]);
-  const [tags, setTags] = useState<string>('');
+  const [folderId, setFolderId] = useState<string | null>(currentFolderId);
   const [source, setSource] = useState<ScoreSource>('pdf');
   const [isBusy, setIsBusy] = useState(false);
   const [error, setError] = useState<string | undefined>();
 
   const isValid = useMemo(() => name.trim().length > 0 && pages.length > 0, [name, pages.length]);
+  const folderOptions = useMemo(() => getFolderTree(folders), [folders]);
+  const selectedFolder = useMemo(
+    () => folders.find((folder) => folder.id === folderId) ?? null,
+    [folders, folderId],
+  );
 
   const ingestFiles = async (files: FileList | null, handler: (files: File[]) => Promise<void>) => {
     if (!files?.length) return;
@@ -75,9 +85,9 @@ const CreatePage = () => {
       const id = await addScore({
         name: name.trim(),
         favorite: false,
-        tags: tags.split(',').map((tag) => tag.trim()).filter(Boolean),
         pages,
         source,
+        folderId: folderId ?? null,
         thumbnail,
       });
       router.push(`/viewer/${id}`);
@@ -159,16 +169,27 @@ const CreatePage = () => {
           />
         </div>
         <div className="rounded-3xl border border-brand-100 bg-white p-6 shadow-sm">
-          <label className="text-sm font-medium text-brand-400" htmlFor="tags">
-            Tags
+          <label className="text-sm font-medium text-brand-400" htmlFor="folder">
+            Folder
           </label>
-          <input
-            id="tags"
-            value={tags}
-            onChange={(event) => setTags(event.target.value)}
-            placeholder="comma separated"
+          <select
+            id="folder"
+            value={folderId ?? ''}
+            onChange={(event) => setFolderId(event.target.value ? event.target.value : null)}
             className="mt-2 w-full rounded-2xl border border-brand-100 bg-brand-50 px-4 py-3 text-brand-500 focus:border-brand-300 focus:outline-none"
-          />
+          >
+            <option value="">All scores</option>
+            {folderOptions.map(({ folder }) => (
+              <option key={folder.id} value={folder.id}>
+                {getFolderPathLabel(folder, folders)}
+              </option>
+            ))}
+          </select>
+          {selectedFolder && (
+            <p className="mt-2 text-xs text-brand-300">
+              {getFolderPathLabel(selectedFolder, folders)}
+            </p>
+          )}
         </div>
         <button
           type="button"

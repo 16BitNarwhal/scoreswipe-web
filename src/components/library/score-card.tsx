@@ -105,13 +105,6 @@ const ScoreCard = ({ score }: ScoreCardProps) => {
         <p className="text-sm text-brand-400">
           Updated {new Date(score.updatedAt).toLocaleDateString()} · Source {score.source}
         </p>
-        <div className="mt-auto flex flex-wrap gap-2">
-          {score.tags.slice(0, 3).map((tag) => (
-            <span key={tag} className="rounded-full bg-brand-100 px-3 py-1 text-xs text-brand-400">
-              {tag}
-            </span>
-          ))}
-        </div>
       </div>
     </div>
   );

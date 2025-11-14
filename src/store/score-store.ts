@@ -4,10 +4,13 @@ import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import { db, getDefaultSettings } from '@/lib/storage/db';
 import type { AppSettings, Score, ScorePage } from '@/lib/models/score';
+import type { Folder } from '@/lib/models/folder';
 
 interface ScoreState {
   scores: Score[];
+  folders: Folder[];
   selectedScoreId?: string;
+  currentFolderId: string | null;
   settings: AppSettings;
   loading: boolean;
   error?: string;
@@ -19,6 +22,10 @@ interface ScoreState {
   toggleFavorite: (id: string) => Promise<void>;
   selectScore: (id?: string) => void;
   upsertSettings: (partial: Partial<AppSettings>) => Promise<void>;
+  createFolder: (name: string, parentId?: string | null) => Promise<string>;
+  updateFolder: (id: string, updates: Partial<Pick<Folder, 'name' | 'parentId'>>) => Promise<void>;
+  deleteFolder: (id: string) => Promise<void>;
+  setCurrentFolder: (id: string | null) => void;
 }
 
 const serializePages = async (pages: ScorePage[]): Promise<ScorePage[]> => {
@@ -34,19 +41,23 @@ const serializePages = async (pages: ScorePage[]): Promise<ScorePage[]> => {
 export const useScoreStore = create<ScoreState>()(
   devtools((set, get) => ({
     scores: [],
+    folders: [],
     settings: getDefaultSettings(),
+    currentFolderId: null,
     loading: true,
     initialize: async () => {
       try {
-        const [scores, settingsRecord] = await Promise.all([
+        const [scores, settingsRecord, folders] = await Promise.all([
           db.scores.toArray(),
           db.settings.toCollection().first(),
+          db.folders.toArray(),
         ]);
         
         // Ensure blobs are proper Blob instances after retrieval from IndexedDB
         // IndexedDB should preserve Blobs, but we validate them anyway
         const normalizedScores = scores.map((score) => ({
           ...score,
+          folderId: score.folderId ?? null,
           pages: score.pages.map((page) => {
             // If it's already a Blob, use it; otherwise IndexedDB should have preserved it
             // but we'll ensure it's valid
@@ -68,6 +79,7 @@ export const useScoreStore = create<ScoreState>()(
           : getDefaultSettings();
         set({
           scores: normalizedScores,
+          folders,
           settings,
           loading: false,
         });
@@ -83,6 +95,7 @@ export const useScoreStore = create<ScoreState>()(
         createdAt: now,
         updatedAt: now,
         ...input,
+        folderId: input.folderId ?? null,
         pages: await serializePages(input.pages),
       };
       await db.scores.put(score);
@@ -92,9 +105,13 @@ export const useScoreStore = create<ScoreState>()(
     updateScore: async (id, updates) => {
       const prev = get().scores.find((score) => score.id === id);
       if (!prev) return;
+      const normalizedUpdates: Partial<Score> = { ...updates };
+      if (Object.prototype.hasOwnProperty.call(normalizedUpdates, 'folderId')) {
+        normalizedUpdates.folderId = normalizedUpdates.folderId ?? null;
+      }
       const updated: Score = {
         ...prev,
-        ...updates,
+        ...normalizedUpdates,
         pages: updates.pages ? await serializePages(updates.pages) : prev.pages,
         updatedAt: new Date().toISOString(),
       };
@@ -146,5 +163,56 @@ export const useScoreStore = create<ScoreState>()(
       });
       set({ settings: merged });
     },
+    createFolder: async (name, parentId = null) => {
+      const trimmed = name.trim();
+      if (!trimmed) {
+        throw new Error('Folder name cannot be empty.');
+      }
+      const id = crypto.randomUUID();
+      const now = new Date().toISOString();
+      const folder: Folder = {
+        id,
+        name: trimmed,
+        parentId: parentId ?? null,
+        createdAt: now,
+        updatedAt: now,
+      };
+      await db.folders.put(folder);
+      set({ folders: [...get().folders, folder] });
+      return id;
+    },
+    updateFolder: async (id, updates) => {
+      const folder = get().folders.find((item) => item.id === id);
+      if (!folder) return;
+      const normalized: Partial<Folder> = { ...updates };
+      if (normalized.name !== undefined) {
+        normalized.name = normalized.name.trim();
+        if (!normalized.name) {
+          throw new Error('Folder name cannot be empty.');
+        }
+      }
+      const updated: Folder = {
+        ...folder,
+        ...normalized,
+        updatedAt: new Date().toISOString(),
+      };
+      await db.folders.put(updated);
+      set({
+        folders: get().folders.map((item) => (item.id === id ? updated : item)),
+      });
+    },
+    deleteFolder: async (id) => {
+      const hasChildren = get().folders.some((folder) => folder.parentId === id);
+      const hasScores = get().scores.some((score) => (score.folderId ?? null) === id);
+      if (hasChildren || hasScores) {
+        throw new Error('Folder must be empty before deleting.');
+      }
+      await db.folders.delete(id);
+      set((state) => ({
+        folders: state.folders.filter((folder) => folder.id !== id),
+        currentFolderId: state.currentFolderId === id ? null : state.currentFolderId,
+      }));
+    },
+    setCurrentFolder: (id) => set({ currentFolderId: id ?? null }),
   })),
 );

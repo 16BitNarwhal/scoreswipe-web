@@ -6,8 +6,9 @@ import { useState } from 'react';
 import { ArrowDownToLine, ArrowUpToLine } from 'lucide-react';
 
 const ExportPage = () => {
-  const { scores, initialize } = useScoreStore((state) => ({
+  const { scores, folders, initialize } = useScoreStore((state) => ({
     scores: state.scores,
+    folders: state.folders,
     initialize: state.initialize,
   }));
   const [busy, setBusy] = useState(false);
@@ -17,7 +18,7 @@ const ExportPage = () => {
     setBusy(true);
     setMessage(undefined);
     try {
-      await downloadLibraryBackup(scores);
+      await downloadLibraryBackup(scores, folders);
       setMessage('Backup downloaded.');
     } catch (error) {
       setMessage((error as Error).message);
@@ -53,12 +54,12 @@ const ExportPage = () => {
         <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
           <button
             type="button"
-            disabled={busy || scores.length === 0}
+            disabled={busy || (scores.length === 0 && folders.length === 0)}
             onClick={handleExport}
             className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-brand-400 px-6 py-3 text-sm font-semibold text-white transition hover:bg-brand-300 disabled:cursor-not-allowed disabled:bg-brand-200 sm:w-auto"
           >
             <ArrowDownToLine className="h-4 w-4" />
-            Download backup ({scores.length} scores)
+            Download backup ({scores.length} scores · {folders.length} folders)
           </button>
           <label className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-full border border-brand-200 px-6 py-3 text-sm text-brand-400 transition hover:border-brand-300 sm:w-auto">
             <ArrowUpToLine className="h-4 w-4" />

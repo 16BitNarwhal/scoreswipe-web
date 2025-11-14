@@ -1,15 +1,24 @@
 'use client';
 
 import Link from 'next/link';
-import { ToggleLeft } from 'lucide-react';
+import { FolderPlus, ToggleLeft } from 'lucide-react';
 
 interface LibraryActionsProps {
   onToggleFavorites: (value: boolean) => void;
   favoritesOnly: boolean;
+  onCreateFolder: () => void;
 }
 
-const LibraryActions = ({ onToggleFavorites, favoritesOnly }: LibraryActionsProps) => (
+const LibraryActions = ({ onToggleFavorites, favoritesOnly, onCreateFolder }: LibraryActionsProps) => (
   <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-end">
+    <button
+      type="button"
+      onClick={onCreateFolder}
+      className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-brand-200 px-5 py-2 text-sm text-brand-400 transition hover:border-brand-300 sm:w-auto"
+    >
+      <FolderPlus className="h-4 w-4" />
+      New folder
+    </button>
     <Link
       href="/create"
       className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-brand-400 px-5 py-2 text-sm font-semibold text-white transition hover:bg-brand-300 sm:w-auto"

@@ -1,17 +1,22 @@
 import { db } from '@/lib/storage/db';
 import type { Score } from '@/lib/models/score';
+import type { Folder } from '@/lib/models/folder';
 
 interface LibraryBackup {
   version: number;
   exportedAt: string;
-  scores: Score[];
+  scores: Array<Omit<Score, 'folderId'> & { folderId?: string | null; tags?: string[] }>;
+  folders?: Folder[];
 }
 
-export const downloadLibraryBackup = async (scores: Score[]) => {
+const BACKUP_VERSION = 2;
+
+export const downloadLibraryBackup = async (scores: Score[], folders: Folder[]) => {
   const backup: LibraryBackup = {
-    version: 1,
+    version: BACKUP_VERSION,
     exportedAt: new Date().toISOString(),
-    scores,
+    scores: scores.map((score) => ({ ...score })),
+    folders,
   };
 
   const blob = new Blob([JSON.stringify(backup, null, 2)], {
@@ -35,8 +40,25 @@ export const importLibraryBackup = async (file: File) => {
     throw new Error('No scores found in backup.');
   }
 
-  await db.transaction('rw', db.scores, async () => {
+  const normalizedScores: Score[] = backup.scores.map((score) => {
+    const { tags, folderId, ...rest } = score;
+    return {
+      ...rest,
+      folderId: folderId ?? null,
+    } as Score;
+  });
+
+  const folders: Folder[] = (backup.folders ?? []).map((folder) => ({
+    ...folder,
+    parentId: folder.parentId ?? null,
+  }));
+
+  await db.transaction('rw', db.scores, db.folders, async () => {
+    await db.folders.clear();
     await db.scores.clear();
-    await db.scores.bulkPut(backup.scores);
+    if (folders.length) {
+      await db.folders.bulkPut(folders);
+    }
+    await db.scores.bulkPut(normalizedScores);
   });
 };
