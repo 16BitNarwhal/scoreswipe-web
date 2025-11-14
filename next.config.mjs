@@ -1,6 +1,8 @@
-import { createSecureHeaders } from "next-secure-headers";
-
 const nextConfig = {
+  output: 'export',
+  images: {
+    unoptimized: true,
+  },
   webpack: (config) => {
     config.resolve.fallback = {
       ...config.resolve.fallback,
@@ -9,15 +11,7 @@ const nextConfig = {
     };
     return config;
   },
-  headers: async () => {
-    const headers = createSecureHeaders();
-    return [
-      {
-        source: "/(.*)",
-        headers,
-      },
-    ];
-  },
+  // Note: headers are not supported in static export for GitHub Pages
 };
 
 export default nextConfig;
