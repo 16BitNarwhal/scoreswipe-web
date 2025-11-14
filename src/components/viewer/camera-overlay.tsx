@@ -107,7 +107,7 @@ const CameraOverlay = ({ sensitivity, invertDirection, swipeMode, onTiltLeft, on
             {status === 'disabled' && ' disabled'}
           </span>
         </div>
-        <div className="mt-4 flex h-48 items-center justify-center overflow-hidden rounded-2xl bg-black/70">
+        <div className="mt-4 flex h-40 items-center justify-center overflow-hidden rounded-2xl bg-black/70 sm:h-48">
           <video ref={videoRef} className="h-full w-full scale-x-[-1] object-cover" playsInline muted />
           {status === 'loading' && <Loader2 className="h-8 w-8 animate-spin text-white" />}
           {status === 'error' && <CameraOff className="h-8 w-8 text-red-400" />}

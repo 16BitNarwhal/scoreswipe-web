@@ -15,7 +15,7 @@ export const SpotlightSearch = ({ value, onChange, sort, onSortChange }: Spotlig
 
   return (
     <div className="rounded-3xl border border-brand-100 bg-white/80 p-4 shadow-sm">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col gap-4 md:flex-row md:flex-wrap md:items-center md:justify-between">
         <div className="flex flex-1 items-center gap-3">
           <Search className="h-5 w-5 text-brand-300" />
           <label htmlFor={inputId} className="sr-only">
@@ -30,7 +30,7 @@ export const SpotlightSearch = ({ value, onChange, sort, onSortChange }: Spotlig
             type="search"
           />
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 md:w-auto">
           <SortAsc className="h-5 w-5 text-brand-300" />
           <select
             value={sort}

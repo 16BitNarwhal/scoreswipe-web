@@ -23,9 +23,9 @@ const marketingSections = [
 ];
 
 const HomePage = () => (
-  <main className="flex flex-1 flex-col min-h-screen">
-    <section className="relative isolate overflow-hidden bg-brand-100 px-6 py-24 text-brand-500 md:px-12 min-h-screen flex items-center">
-      <div className="mx-auto flex max-w-6xl flex-col-reverse items-center gap-10 md:flex-row w-full">
+  <main className="flex min-h-screen flex-1 flex-col">
+    <section className="relative isolate flex min-h-screen items-center overflow-hidden bg-brand-100 px-4 py-16 text-brand-500 sm:px-6 sm:py-20 lg:px-12 lg:py-24">
+      <div className="mx-auto flex w-full max-w-6xl flex-col items-center gap-10 text-center md:flex-row md:flex-row-reverse md:items-start md:gap-12 md:text-left">
         <div className="w-full md:w-1/2">
           <h1 className="text-4xl font-bold tracking-tight text-brand-500 sm:text-5xl">
             ScoreSwipe Web
@@ -34,7 +34,7 @@ const HomePage = () => (
             Perform with confidence. Upload, organize, and flip through your sheet music hands-free
             right from the browser.
           </p>
-          <div className="mt-10 flex flex-col gap-4 sm:flex-row">
+          <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:items-center sm:justify-start">
             <Link
               href="/library"
               className="inline-flex items-center justify-center rounded-full bg-brand-400 px-8 py-3 text-base font-semibold text-white shadow-md transition hover:bg-brand-300"
@@ -45,8 +45,8 @@ const HomePage = () => (
           </div>
         </div>
         <div className="relative w-full md:w-1/2">
-          <div className="rounded-3xl bg-white/70 p-8 shadow-xl backdrop-blur">
-            <div className="grid grid-cols-2 gap-4 text-sm">
+          <div className="rounded-3xl bg-white/70 p-6 shadow-xl backdrop-blur sm:p-8">
+            <div className="grid grid-cols-1 gap-4 text-sm sm:grid-cols-2">
               {marketingSections.map((section) => (
                 <div key={section.title} className="flex flex-col gap-3 rounded-2xl bg-white/80 p-4">
                   <section.icon className="h-8 w-8 text-brand-400" />

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import type { Score } from '@/lib/models/score';
 
 interface FullscreenViewerProps {
@@ -100,31 +100,6 @@ const FullscreenViewer = ({ score, pageIndex, onPageChange, onClose }: Fullscree
           ))}
         </div>
 
-        {/* Navigation buttons */}
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            handlePrev();
-          }}
-          disabled={pageIndex === 0 || isTransitioning}
-          className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full bg-white/90 p-4 text-brand-500 shadow-lg transition-all hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed"
-          aria-label="Previous page"
-        >
-          <ChevronLeft className="h-8 w-8" />
-        </button>
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            handleNext();
-          }}
-          disabled={pageIndex === maxIndex || isTransitioning}
-          className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-white/90 p-4 text-brand-500 shadow-lg transition-all hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed"
-          aria-label="Next page"
-        >
-          <ChevronRight className="h-8 w-8" />
-        </button>
       </div>
     </div>
   );

@@ -39,7 +39,7 @@ const SettingsPage = () => {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
+      <div className="text-center md:text-left">
         <h1 className="text-3xl font-semibold text-brand-500">Settings</h1>
         <p className="text-brand-500/70">Calibrate gestures and customize the viewing experience.</p>
       </div>

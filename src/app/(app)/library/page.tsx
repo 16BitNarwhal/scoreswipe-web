@@ -36,7 +36,7 @@ const LibraryPage = () => {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
+        <div className="text-center md:text-left">
           <h1 className="text-3xl font-semibold text-brand-500">Library</h1>
           <p className="text-brand-500/70">
             Manage your scores, mark favorites, and jump straight into performance.

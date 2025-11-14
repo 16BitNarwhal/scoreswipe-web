@@ -62,7 +62,7 @@ const PageViewer = ({ score, pageIndex, onPageChange }: PageViewerProps) => {
           className="relative flex flex-1 items-center justify-center overflow-hidden rounded-3xl border border-brand-100 bg-white shadow"
         >
           <div
-            className="flex h-[70vh] transition-transform duration-500 ease-in-out"
+            className="flex h-[55vh] transition-transform duration-500 ease-in-out sm:h-[60vh] lg:h-[70vh]"
             style={{
               transform: `translateX(-${pageIndex * 100}%)`,
               width: `${score.pages.length * 100}%`,
@@ -75,16 +75,16 @@ const PageViewer = ({ score, pageIndex, onPageChange }: PageViewerProps) => {
         <button
           type="button"
           onClick={handlePrev}
-            disabled={pageIndex === 0 || isTransitioning}
-            className="absolute left-6 top-1/2 -translate-y-1/2 rounded-full bg-white/80 p-3 text-brand-400 shadow transition-all hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed"
+          disabled={pageIndex === 0 || isTransitioning}
+          className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-white/80 p-2 text-brand-400 shadow transition-all hover:bg-white disabled:cursor-not-allowed disabled:opacity-40 sm:left-6 sm:p-3"
         >
           <ChevronLeft className="h-6 w-6" />
         </button>
         <button
           type="button"
           onClick={handleNext}
-            disabled={pageIndex === maxIndex || isTransitioning}
-            className="absolute right-6 top-1/2 -translate-y-1/2 rounded-full bg-white/80 p-3 text-brand-400 shadow transition-all hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed"
+          disabled={pageIndex === maxIndex || isTransitioning}
+          className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-white/80 p-2 text-brand-400 shadow transition-all hover:bg-white disabled:cursor-not-allowed disabled:opacity-40 sm:right-6 sm:p-3"
         >
           <ChevronRight className="h-6 w-6" />
         </button>

@@ -89,30 +89,30 @@ const CreatePage = () => {
   };
 
   return (
-    <div className="grid gap-12 lg:grid-cols-[2fr,1fr]">
+    <div className="grid gap-10 lg:grid-cols-[2fr,1fr]">
       <div className="flex flex-col gap-6">
-        <header className="flex flex-col gap-2">
+        <header className="flex flex-col gap-2 text-center md:text-left">
           <h1 className="text-3xl font-semibold text-brand-500">Create a score</h1>
           <p className="text-brand-500/70">
             Import pages, arrange them, and save your score to begin performing hands-free.
           </p>
         </header>
-        <div className="flex flex-col gap-4 rounded-3xl border border-dashed border-brand-200 bg-white/70 p-8 text-center">
+        <div className="flex flex-col gap-4 rounded-3xl border border-dashed border-brand-200 bg-white/70 p-6 text-center sm:p-8">
           <p className="text-brand-400">Drop files here or use the buttons below</p>
-          <div className="flex flex-wrap justify-center gap-4">
-            <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-brand-200 px-5 py-3 text-sm text-brand-400 transition hover:border-brand-300">
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-center sm:gap-4">
+            <label className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-full border border-brand-200 px-5 py-3 text-sm text-brand-400 transition hover:border-brand-300 sm:w-auto">
               <FileText className="h-4 w-4" />
               Import PDF
               <input type="file" accept="application/pdf" className="hidden" onChange={handlePdfUpload} />
             </label>
-            <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-brand-200 px-5 py-3 text-sm text-brand-400 transition hover:border-brand-300">
+            <label className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-full border border-brand-200 px-5 py-3 text-sm text-brand-400 transition hover:border-brand-300 sm:w-auto">
               <FileImage className="h-4 w-4" />
               Add images
               <input type="file" accept="image/*" multiple className="hidden" onChange={handleImageUpload} />
             </label>
             <button
               type="button"
-              className="inline-flex items-center gap-2 rounded-full border border-brand-200 px-5 py-3 text-sm text-brand-400 transition hover:border-brand-300"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-brand-200 px-5 py-3 text-sm text-brand-400 transition hover:border-brand-300 sm:w-auto"
               onClick={() => setSource('camera')}
             >
               <Camera className="h-4 w-4" />
