@@ -42,6 +42,7 @@ const FolderGrid = ({ folders, onOpen, onDropScore }: FolderGridProps) => {
         <button
           key={folder.id}
           type="button"
+          data-folder-id={folder.id}
           onClick={() => onOpen(folder.id)}
           onDragOver={(e) => handleDragOver(e, folder.id)}
           onDragLeave={handleDragLeave}

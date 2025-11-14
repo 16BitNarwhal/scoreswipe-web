@@ -9,9 +9,10 @@ import type { Score } from '@/lib/models/score';
 
 interface ScoreCardProps {
   score: Score;
+  onDropScore?: (scoreId: string, folderId: string | null) => void;
 }
 
-const ScoreCard = ({ score }: ScoreCardProps) => {
+const ScoreCard = ({ score, onDropScore }: ScoreCardProps) => {
   const router = useRouter();
   const toggleFavorite = useScoreStore((state) => state.toggleFavorite);
   const selectScore = useScoreStore((state) => state.selectScore);
@@ -111,15 +112,84 @@ const ScoreCard = ({ score }: ScoreCardProps) => {
     }
   };
 
+  const dragStartPosRef = useRef<{ x: number; y: number } | null>(null);
+  const draggedScoreIdRef = useRef<string | null>(null);
+  const isDraggingRef = useRef(false);
+
   const handleDragStart = (e: React.DragEvent) => {
     setIsDragging(true);
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', score.id);
     e.dataTransfer.setData('application/score-id', score.id);
+    draggedScoreIdRef.current = score.id;
   };
 
   const handleDragEnd = () => {
     setIsDragging(false);
+    draggedScoreIdRef.current = null;
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    dragStartPosRef.current = { x: touch.clientX, y: touch.clientY };
+    draggedScoreIdRef.current = score.id;
+    // Don't set isDragging yet - wait for movement
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!dragStartPosRef.current) return;
+    const touch = e.touches[0];
+    const deltaX = Math.abs(touch.clientX - dragStartPosRef.current.x);
+    const deltaY = Math.abs(touch.clientY - dragStartPosRef.current.y);
+    
+    // Only start dragging if moved more than 10px
+    if (deltaX > 10 || deltaY > 10) {
+      isDraggingRef.current = true;
+      setIsDragging(true);
+      e.preventDefault(); // Prevent scrolling
+    }
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (!dragStartPosRef.current || !draggedScoreIdRef.current) {
+      dragStartPosRef.current = null;
+      draggedScoreIdRef.current = null;
+      isDraggingRef.current = false;
+      setIsDragging(false);
+      return;
+    }
+
+    // If we were dragging (moved more than threshold), handle drop
+    if (isDraggingRef.current && onDropScore) {
+      const touch = e.changedTouches[0];
+      const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+      
+      // Find the drop target (folder or drop zone)
+      let dropTarget: HTMLElement | null = elementBelow as HTMLElement;
+      while (dropTarget && dropTarget !== document.body) {
+        const folderId = dropTarget.getAttribute('data-folder-id');
+        const isDropZone = dropTarget.hasAttribute('data-drop-zone');
+        
+        if (folderId !== null) {
+          // Drop on folder
+          e.preventDefault(); // Prevent click
+          onDropScore(draggedScoreIdRef.current, folderId);
+          break;
+        } else if (isDropZone) {
+          // Drop on drop zone (move to parent)
+          e.preventDefault(); // Prevent click
+          const parentId = dropTarget.getAttribute('data-parent-folder-id');
+          onDropScore(draggedScoreIdRef.current, parentId === 'null' ? null : parentId);
+          break;
+        }
+        dropTarget = dropTarget.parentElement;
+      }
+    }
+
+    setIsDragging(false);
+    isDraggingRef.current = false;
+    dragStartPosRef.current = null;
+    draggedScoreIdRef.current = null;
   };
 
   return (
@@ -127,8 +197,11 @@ const ScoreCard = ({ score }: ScoreCardProps) => {
       draggable
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
       onClick={(e) => {
-        if (!showMenu && !isEditing) {
+        if (!showMenu && !isEditing && !isDragging) {
           handleOpen();
         }
       }}

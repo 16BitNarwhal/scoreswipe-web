@@ -5,9 +5,10 @@ interface ScoreGridProps {
   scores: Score[];
   loading?: boolean;
   emptyMessage?: string;
+  onDropScore?: (scoreId: string, folderId: string | null) => void;
 }
 
-const ScoreGrid = ({ scores, loading = false, emptyMessage }: ScoreGridProps) => {
+const ScoreGrid = ({ scores, loading = false, emptyMessage, onDropScore }: ScoreGridProps) => {
   if (loading) {
     return (
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -32,7 +33,7 @@ const ScoreGrid = ({ scores, loading = false, emptyMessage }: ScoreGridProps) =>
   return (
     <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
       {scores.map((score) => (
-        <ScoreCard key={score.id} score={score} />
+        <ScoreCard key={score.id} score={score} onDropScore={onDropScore} />
       ))}
     </div>
   );

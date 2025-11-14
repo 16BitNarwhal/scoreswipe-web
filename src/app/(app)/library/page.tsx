@@ -11,9 +11,11 @@ import { getChildFolders, getFolderAncestors } from '@/lib/utils/folders';
 const DropZone = ({
   onDropScore,
   currentFolderId,
+  parentFolderId,
 }: {
   onDropScore: (scoreId: string, folderId: string | null) => void;
   currentFolderId: string | null;
+  parentFolderId: string | null;
 }) => {
   const [isDragOver, setIsDragOver] = useState(false);
 
@@ -34,15 +36,17 @@ const DropZone = ({
     setIsDragOver(false);
     const scoreId = e.dataTransfer.getData('application/score-id') || e.dataTransfer.getData('text/plain');
     if (scoreId && currentFolderId) {
-      // Only allow dropping out if we're inside a folder
-      onDropScore(scoreId, null);
+      // Move to parent folder instead of root
+      onDropScore(scoreId, parentFolderId);
     }
   };
 
   if (!currentFolderId) return null;
 
   return (
-    <div
+      <div
+      data-drop-zone
+      data-parent-folder-id={parentFolderId ?? 'null'}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
@@ -53,7 +57,7 @@ const DropZone = ({
       }`}
     >
       <p className="text-sm text-brand-400">
-        {isDragOver ? 'Drop here to move out of folder' : 'Drag scores here to move out of folder'}
+        {isDragOver ? 'Drop here to move to parent folder' : 'Drag scores here to move to parent folder'}
       </p>
     </div>
   );
@@ -96,6 +100,12 @@ const LibraryPage = () => {
   const breadcrumbs = useMemo(() => {
     const ancestors = currentFolderId ? getFolderAncestors(folders, currentFolderId) : [];
     return [{ id: null, name: 'All scores' }, ...ancestors.map((folder) => ({ id: folder.id, name: folder.name }))];
+  }, [folders, currentFolderId]);
+
+  const parentFolderId = useMemo(() => {
+    if (!currentFolderId) return null;
+    const currentFolder = folders.find((f) => f.id === currentFolderId);
+    return currentFolder?.parentId ?? null;
   }, [folders, currentFolderId]);
 
   const filtered = useMemo(() => {
@@ -180,8 +190,8 @@ const LibraryPage = () => {
         </section>
       )}
       <SpotlightSearch value={query} onChange={setQuery} onSortChange={setSort} sort={sort} />
-      <DropZone onDropScore={handleDropScore} currentFolderId={currentFolderId} />
-      <ScoreGrid scores={filtered} loading={loading} emptyMessage={emptyMessage} />
+      <DropZone onDropScore={handleDropScore} currentFolderId={currentFolderId} parentFolderId={parentFolderId} />
+      <ScoreGrid scores={filtered} loading={loading} emptyMessage={emptyMessage} onDropScore={handleDropScore} />
     </div>
   );
 };
