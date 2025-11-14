@@ -45,11 +45,11 @@ const FullscreenViewer = ({ score, pageIndex, onPageChange, onClose }: Fullscree
     const originalOverflow = document.body.style.overflow;
     const originalMargin = document.body.style.margin;
     const htmlMargin = document.documentElement.style.margin;
-    
+
     document.body.style.overflow = 'hidden';
     document.body.style.margin = '0';
     document.documentElement.style.margin = '0';
-    
+
     return () => {
       document.body.style.overflow = originalOverflow;
       document.body.style.margin = originalMargin;
@@ -93,37 +93,6 @@ const FullscreenViewer = ({ score, pageIndex, onPageChange, onClose }: Fullscree
     dragStateRef.current = { dragStartX, dragOffset, pageIndex, maxIndex, isTransitioning };
   }, [dragStartX, dragOffset, pageIndex, maxIndex, isTransitioning]);
 
-  const handleDragMove = (e: TouchEvent | MouseEvent) => {
-    if (!isDragging) return;
-    e.preventDefault();
-    const currentX = getClientX(e);
-    const offset = currentX - dragStateRef.current.dragStartX;
-    setDragOffset(offset);
-  };
-
-  const handleDragEnd = () => {
-    if (!isDragging) return;
-    setIsDragging(false);
-    
-    const containerWidth = containerRef.current?.clientWidth ?? 1;
-    const threshold = containerWidth * 0.2; // 20% of container width
-    const currentOffset = dragStateRef.current.dragOffset;
-    const currentPageIndex = dragStateRef.current.pageIndex;
-    const currentMaxIndex = dragStateRef.current.maxIndex;
-    
-    if (Math.abs(currentOffset) > threshold) {
-      if (currentOffset > 0 && currentPageIndex > 0) {
-        // Swiped right, go to previous page
-        handlePrev();
-      } else if (currentOffset < 0 && currentPageIndex < currentMaxIndex) {
-        // Swiped left, go to next page
-        handleNext();
-      }
-    }
-    
-    setDragOffset(0);
-  };
-
   useEffect(() => {
     if (!isDragging) return;
 
@@ -138,13 +107,13 @@ const FullscreenViewer = ({ score, pageIndex, onPageChange, onClose }: Fullscree
     const handleEnd = () => {
       if (!isDragging) return;
       setIsDragging(false);
-      
+
       const containerWidth = containerRef.current?.clientWidth ?? 1;
       const threshold = containerWidth * 0.2;
       const currentOffset = dragStateRef.current.dragOffset;
       const currentPageIndex = dragStateRef.current.pageIndex;
       const currentMaxIndex = dragStateRef.current.maxIndex;
-      
+
       if (Math.abs(currentOffset) > threshold) {
         if (currentOffset > 0 && currentPageIndex > 0) {
           handlePrev();
@@ -152,7 +121,7 @@ const FullscreenViewer = ({ score, pageIndex, onPageChange, onClose }: Fullscree
           handleNext();
         }
       }
-      
+
       setDragOffset(0);
     };
 
@@ -196,7 +165,7 @@ const FullscreenViewer = ({ score, pageIndex, onPageChange, onClose }: Fullscree
       </div>
 
       {/* Image container */}
-      <div 
+      <div
         className="relative flex h-full w-full items-center justify-center overflow-hidden select-none"
         onTouchStart={handleDragStart}
         onMouseDown={handleDragStart}
@@ -242,7 +211,7 @@ const FullscreenPageImage = ({ page, index }: { page: Score['pages'][0]; index: 
     if (page?.imageBlob) {
       try {
         // Ensure it's a valid Blob
-        const blob = page.imageBlob instanceof Blob ? page.imageBlob : new Blob([page.imageBlob as any], { type: 'image/png' });
+        const blob = page.imageBlob instanceof Blob ? page.imageBlob : new Blob([page.imageBlob as BlobPart], { type: 'image/png' });
         const objectUrl = URL.createObjectURL(blob);
         blobRef.current = page.imageBlob;
         urlRef.current = objectUrl;
