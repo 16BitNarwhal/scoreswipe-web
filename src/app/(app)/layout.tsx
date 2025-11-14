@@ -2,14 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Library, PlusCircle, Settings } from 'lucide-react';
+import { Library, PlusCircle } from 'lucide-react';
 import { useEffect } from 'react';
 import { useScoreStore } from '@/store/score-store';
 
 const navItems = [
   { href: '/library', icon: Library, label: 'Library' },
   { href: '/create', icon: PlusCircle, label: 'Create' },
-  { href: '/settings', icon: Settings, label: 'Settings' },
 ];
 
 const AppLayout = ({ children }: { children: React.ReactNode }) => {

@@ -4,6 +4,7 @@ import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import PageViewer from '@/components/viewer/page-viewer';
 import CameraOverlay from '@/components/viewer/camera-overlay';
+import ViewerSettings from '@/components/viewer/viewer-settings';
 import { useScoreStore } from '@/store/score-store';
 import { AlertTriangle } from 'lucide-react';
 
@@ -106,14 +107,7 @@ const ViewerPageContent = () => {
           onTiltLeft={handleTiltLeft}
           onTiltRight={handleTiltRight}
         />
-        <div className="rounded-3xl border border-brand-100 bg-white p-6 shadow-sm">
-          <h2 className="text-xl font-semibold text-brand-500">Performance tips</h2>
-          <ul className="mt-3 space-y-2 text-sm text-brand-400">
-            <li>Keep your face centered in the frame for consistent detection.</li>
-            <li>Use the settings page to calibrate a neutral pose before performing.</li>
-            <li>Keyboard arrows and on-screen buttons remain available as a fallback.</li>
-          </ul>
-        </div>
+        <ViewerSettings />
       </div>
     </div>
   );
