@@ -15,10 +15,17 @@ const CameraOverlay = ({ sensitivity, invertDirection, onTiltLeft, onTiltRight }
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const detectorRef = useRef<TiltDetector | null>(null);
   const [status, setStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
+  const startingRef = useRef(false);
 
   useEffect(() => {
     const video = videoRef.current;
-    if (!video) return;
+    if (!video || startingRef.current) return;
+
+    // Clean up previous detector
+    if (detectorRef.current) {
+      detectorRef.current.stop();
+      detectorRef.current = null;
+    }
 
     const detector = new TiltDetector({
       sensitivity,
@@ -29,21 +36,32 @@ const CameraOverlay = ({ sensitivity, invertDirection, onTiltLeft, onTiltRight }
     detectorRef.current = detector;
 
     const start = async () => {
+      if (startingRef.current) return;
+      startingRef.current = true;
       setStatus('loading');
       try {
         await detector.start(video);
         setStatus('ready');
       } catch (error) {
+        // Only log if it's not an AbortError (which is expected in StrictMode)
+        if (error instanceof Error && error.name !== 'AbortError') {
+          // eslint-disable-next-line no-console
+          console.error(error);
+        }
         setStatus('error');
-        // eslint-disable-next-line no-console
-        console.error(error);
+      } finally {
+        startingRef.current = false;
       }
     };
 
     start();
 
     return () => {
-      detector.stop();
+      startingRef.current = false;
+      if (detectorRef.current) {
+        detectorRef.current.stop();
+        detectorRef.current = null;
+      }
     };
   }, [invertDirection, onTiltLeft, onTiltRight, sensitivity]);
 

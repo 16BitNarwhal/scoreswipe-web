@@ -42,7 +42,7 @@ const ScoreCard = ({ score }: ScoreCardProps) => {
 
   const handleOpen = () => {
     selectScore(score.id);
-    router.push('/viewer');
+    router.push(`/viewer/${score.id}`);
   };
 
   const handleFavorite = async (event: React.MouseEvent<HTMLButtonElement>) => {

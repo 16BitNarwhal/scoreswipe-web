@@ -80,7 +80,7 @@ const CreatePage = () => {
         source,
         thumbnail,
       });
-      router.push(`/viewer?id=${id}`);
+      router.push(`/viewer/${id}`);
     } catch (err) {
       setError((err as Error).message);
     } finally {

@@ -14,13 +14,28 @@ export class TiltDetector {
 
   async start(videoElement: HTMLVideoElement) {
     try {
+      // Stop any existing stream first
+      this.stop();
+      
       this.stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
       videoElement.srcObject = this.stream;
-      await videoElement.play();
+      
+      // Handle play() interruption gracefully
+      try {
+        await videoElement.play();
+      } catch (playError) {
+        // If play was interrupted, stop the stream and rethrow
+        this.stop();
+        throw playError;
+      }
+      
       this.loop();
     } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('Unable to start camera', error);
+      // Don't log AbortError as it's expected in React StrictMode
+      if (error instanceof Error && error.name !== 'AbortError') {
+        // eslint-disable-next-line no-console
+        console.error('Unable to start camera', error);
+      }
       throw error;
     }
   }

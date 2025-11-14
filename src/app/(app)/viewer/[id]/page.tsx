@@ -1,7 +1,7 @@
 'use client';
 
 import { Suspense, useEffect, useMemo, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import PageViewer from '@/components/viewer/page-viewer';
 import CameraOverlay from '@/components/viewer/camera-overlay';
 import { useScoreStore } from '@/store/score-store';
@@ -9,33 +9,38 @@ import { AlertTriangle } from 'lucide-react';
 
 const ViewerPageContent = () => {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const { scores, selectedScoreId, selectScore, settings } = useScoreStore((state) => ({
+  const params = useParams();
+  const scoreId = params?.id as string | undefined;
+  const { scores, loading, selectScore, settings } = useScoreStore((state) => ({
     scores: state.scores,
-    selectedScoreId: state.selectedScoreId,
+    loading: state.loading,
     selectScore: state.selectScore,
     settings: state.settings,
   }));
   const [pageIndex, setPageIndex] = useState(0);
 
-  const scoreFromQuery = searchParams.get('id');
   const activeScore = useMemo(() => {
-    const id = selectedScoreId ?? scoreFromQuery ?? scores[0]?.id;
-    if (!id) return undefined;
-    return scores.find((score) => score.id === id);
-  }, [scoreFromQuery, scores, selectedScoreId]);
+    if (!scoreId) return undefined;
+    return scores.find((score) => score.id === scoreId);
+  }, [scoreId, scores]);
 
   useEffect(() => {
-    if (scoreFromQuery) {
-      selectScore(scoreFromQuery);
+    if (scoreId) {
+      selectScore(scoreId);
     }
-  }, [scoreFromQuery, selectScore]);
+  }, [scoreId, selectScore]);
 
   useEffect(() => {
-    if (!scores.length) {
-      router.push('/create');
+    // Only check for score existence after loading is complete
+    if (!loading) {
+      if (!scores.length) {
+        router.push('/create');
+      } else if (scoreId && !activeScore) {
+        // Score not found, redirect to library
+        router.push('/library');
+      }
     }
-  }, [router, scores.length]);
+  }, [router, scores.length, scoreId, activeScore, loading]);
 
   useEffect(() => {
     setPageIndex(0);
@@ -56,12 +61,23 @@ const ViewerPageContent = () => {
     return () => window.removeEventListener('keydown', handler);
   }, [activeScore?.pages.length]);
 
+  // Show loading state while scores are being loaded
+  if (loading) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-4 rounded-3xl border border-dashed border-brand-200 bg-white/80 p-12 text-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-brand-300 border-t-transparent" />
+        <p className="text-sm text-brand-400">Loading score...</p>
+      </div>
+    );
+  }
+
+  // Only show error if loading is complete and score still not found
   if (!activeScore) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-4 rounded-3xl border border-dashed border-brand-200 bg-white/80 p-12 text-center">
         <AlertTriangle className="h-8 w-8 text-brand-300" />
         <p className="max-w-sm text-sm text-brand-400">
-          No score selected. Create or select a score from your library first.
+          Score not found. Please select a score from your library.
         </p>
       </div>
     );
@@ -111,3 +127,4 @@ const ViewerPage = () => {
 };
 
 export default ViewerPage;
+
