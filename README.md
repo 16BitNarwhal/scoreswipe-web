@@ -1,48 +1,106 @@
 # ScoreSwipe Web
 
-A Next.js rewrite of ScoreSwipe that brings gesture-driven sheet music navigation to the browser.
+A Next.js rewrite of ScoreSwipe that brings gesture-driven sheet music navigation to the browser. Upload PDFs, capture pages with your camera, organize scores in folders, and navigate hands-free using head tilt detection.
 
-## Getting started
+**Live at:** [scoreswipe.ericzhang.tech](https://scoreswipe.ericzhang.tech)
+
+## Features
+
+- 📚 **Library Management** - Organize scores in folders, mark favorites, search and filter
+- 📄 **PDF Import** - Upload PDFs and automatically convert to navigable pages
+- 📷 **Camera Capture** - Capture sheet music pages directly from your device camera
+- 🖼️ **Image Upload** - Drag and drop images or select multiple files
+- 👁️ **Gesture Controls** - Navigate pages hands-free using head tilt detection (MediaPipe)
+- 📱 **Mobile-Friendly** - Responsive design optimized for mobile devices
+- 💾 **Local-First** - All data stored locally using IndexedDB (no cloud required)
+- 📤 **Export/Import** - Backup and restore your entire library
+
+## Getting Started
+
+### Development
 
 ```bash
 npm install
 npm run dev
 ```
 
-> The initial scaffolding was created manually due to environment restrictions. Run the commands above
-> once dependencies are available on your machine.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-## Project structure
+### Build for Production
+
+```bash
+npm run build
+```
+
+The static export will be generated in the `out` directory.
+
+## Project Structure
 
 ```
 scoreswipe-web/
-├── public/             # Static assets, PWA manifest
+├── .github/
+│   └── workflows/      # GitHub Actions deployment workflow
+├── public/             # Static assets, PWA manifest, CNAME
 ├── src/
-│   ├── app/            # Next.js app routes (home, library, create, viewer, settings)
+│   ├── app/            # Next.js app routes (home, library, create, viewer)
 │   ├── components/     # Reusable UI + feature components
 │   ├── lib/            # Data access, PDF helpers, vision abstractions
 │   ├── store/          # Zustand state containers
 │   └── styles/         # Tailwind and global CSS
 ├── package.json        # Dependencies and scripts
-├── tailwind.config.ts  # Tailwind theme aligned with mobile brand
+├── next.config.mjs    # Next.js configuration (static export)
+├── tailwind.config.ts # Tailwind theme aligned with mobile brand
 └── tsconfig.json       # TypeScript configuration
 ```
 
-## Highlights
+## Technology Stack
 
-- **Library management** powered by IndexedDB via Dexie, with export/import helpers.
-- **Creation workflow** supporting PDFs, image uploads, and TODO hooks for camera capture and PDF rasterization.
-- **Viewer experience** with gesture overlay scaffolding, manual controls, and future-ready MediaPipe integration via `TiltDetector`.
-- **Settings** align with the original Flutter app—swipe mode, sensitivity, inversion, and viewer preferences.
-
-## Roadmap
-
-- Integrate `pdfjs-dist` to rasterize PDFs into page thumbnails.
-- Wire `@mediapipe/tasks-vision` into `TiltDetector` with Web Worker acceleration.
-- Add offline caching service worker and PWA polish.
-- Implement Supabase-backed sync for authenticated users.
-- Flesh out camera capture with WebRTC edge detection and cropping.
+- **Framework:** Next.js 14 (App Router) with static export
+- **Language:** TypeScript
+- **Styling:** Tailwind CSS
+- **State Management:** Zustand
+- **Database:** IndexedDB via Dexie
+- **PDF Processing:** pdfjs-dist
+- **Computer Vision:** @mediapipe/tasks-vision
+- **Icons:** Lucide React
 
 ## Deployment
 
-Once ready, deploy to Vercel and map `scoreswipe.ericzhang.tech` via DNS CNAME. Use environment variables and headers defined in `next.config.mjs` for security hardening.
+This project is configured for deployment to GitHub Pages with a custom domain.
+
+### Quick Setup
+
+1. **Enable GitHub Pages:**
+   - Go to repository Settings → Pages
+   - Select "GitHub Actions" as the source
+
+2. **Configure DNS:**
+   - Add a CNAME record: `scoreswipe` → `<username>.github.io`
+   - Or use A records pointing to GitHub Pages IPs
+
+3. **Set Custom Domain:**
+   - In repository Settings → Pages
+   - Enter custom domain: `scoreswipe.ericzhang.tech`
+   - Enable "Enforce HTTPS"
+
+4. **Deploy:**
+   - Push to `main` branch
+   - GitHub Actions will automatically build and deploy
+
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed deployment instructions.
+
+## Roadmap
+
+- ✅ PDF rasterization with `pdfjs-dist`
+- ✅ Camera capture with WebRTC
+- ✅ Folder-based organization
+- ✅ Drag and drop score management
+- ✅ Mobile-responsive design
+- 🔄 MediaPipe gesture detection integration
+- 🔄 Offline caching service worker
+- 🔄 PWA polish and install prompts
+- 🔄 Cloud sync (optional Supabase integration)
+
+## License
+
+Private project - All rights reserved
