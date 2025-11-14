@@ -77,10 +77,25 @@ export const useScoreStore = create<ScoreState>()(
         const settings = settingsRecord
           ? (({ id: _id, ...rest }: AppSettings & { id?: number }) => rest)(settingsRecord)
           : getDefaultSettings();
+        
+        // Restore selectedScoreId from localStorage if available
+        let selectedScoreId: string | undefined;
+        if (typeof window !== 'undefined') {
+          const storedId = localStorage.getItem('selectedScoreId');
+          // Only restore if the score still exists
+          if (storedId && normalizedScores.some((score) => score.id === storedId)) {
+            selectedScoreId = storedId;
+          } else if (storedId) {
+            // Score was deleted, remove from localStorage
+            localStorage.removeItem('selectedScoreId');
+          }
+        }
+        
         set({
           scores: normalizedScores,
           folders,
           settings,
+          selectedScoreId,
           loading: false,
         });
       } catch (error) {
@@ -122,9 +137,13 @@ export const useScoreStore = create<ScoreState>()(
     },
     deleteScore: async (id) => {
       await db.scores.delete(id);
+      const wasSelected = get().selectedScoreId === id;
+      if (wasSelected && typeof window !== 'undefined') {
+        localStorage.removeItem('selectedScoreId');
+      }
       set({
         scores: get().scores.filter((score) => score.id !== id),
-        selectedScoreId: get().selectedScoreId === id ? undefined : get().selectedScoreId,
+        selectedScoreId: wasSelected ? undefined : get().selectedScoreId,
       });
     },
     reorderScores: (ids) => {
@@ -143,7 +162,16 @@ export const useScoreStore = create<ScoreState>()(
         scores: get().scores.map((score) => (score.id === id ? updated : score)),
       });
     },
-    selectScore: (id) => set({ selectedScoreId: id }),
+    selectScore: (id) => {
+      if (typeof window !== 'undefined') {
+        if (id) {
+          localStorage.setItem('selectedScoreId', id);
+        } else {
+          localStorage.removeItem('selectedScoreId');
+        }
+      }
+      set({ selectedScoreId: id });
+    },
     upsertSettings: async (partial) => {
       const merged = {
         ...get().settings,
@@ -230,13 +258,15 @@ export const useScoreStore = create<ScoreState>()(
       }
 
       // Update state
+      const wasSelectedScoreDeleted = scoresToDelete.some((s) => s.id === get().selectedScoreId);
+      if (wasSelectedScoreDeleted && typeof window !== 'undefined') {
+        localStorage.removeItem('selectedScoreId');
+      }
       set((state) => ({
         folders: state.folders.filter((folder) => !allFolderIdsToDelete.includes(folder.id)),
         scores: state.scores.filter((score) => !scoresToDelete.some((s) => s.id === score.id)),
         currentFolderId: allFolderIdsToDelete.includes(state.currentFolderId ?? '') ? null : state.currentFolderId,
-        selectedScoreId: scoresToDelete.some((s) => s.id === state.selectedScoreId)
-          ? undefined
-          : state.selectedScoreId,
+        selectedScoreId: wasSelectedScoreDeleted ? undefined : state.selectedScoreId,
       }));
     },
     setCurrentFolder: (id) => set({ currentFolderId: id ?? null }),
