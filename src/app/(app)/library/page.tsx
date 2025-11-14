@@ -64,17 +64,29 @@ const DropZone = ({
 };
 
 const LibraryPage = () => {
-  const { scores, folders, loading, initialize, currentFolderId, setCurrentFolder, createFolder, updateScore } =
-    useScoreStore((state) => ({
-      scores: state.scores,
-      folders: state.folders,
-      loading: state.loading,
-      initialize: state.initialize,
-      currentFolderId: state.currentFolderId,
-      setCurrentFolder: state.setCurrentFolder,
-      createFolder: state.createFolder,
-      updateScore: state.updateScore,
-    }));
+  const {
+    scores,
+    folders,
+    loading,
+    initialize,
+    currentFolderId,
+    setCurrentFolder,
+    createFolder,
+    updateScore,
+    updateFolder,
+    deleteFolder,
+  } = useScoreStore((state) => ({
+    scores: state.scores,
+    folders: state.folders,
+    loading: state.loading,
+    initialize: state.initialize,
+    currentFolderId: state.currentFolderId,
+    setCurrentFolder: state.setCurrentFolder,
+    createFolder: state.createFolder,
+    updateScore: state.updateScore,
+    updateFolder: state.updateFolder,
+    deleteFolder: state.deleteFolder,
+  }));
   const [query, setQuery] = useState('');
   const [favoritesOnly, setFavoritesOnly] = useState(false);
   const [sort, setSort] = useState<'recent' | 'alpha'>('recent');
@@ -146,6 +158,63 @@ const LibraryPage = () => {
     }
   };
 
+  const handleEditFolder = async (folderId: string, newName: string) => {
+    try {
+      setFolderError(undefined);
+      await updateFolder(folderId, { name: newName });
+    } catch (error) {
+      setFolderError((error as Error).message);
+    }
+  };
+
+  const handleDeleteFolder = async (folderId: string) => {
+    const folder = folders.find((f) => f.id === folderId);
+    if (!folder) return;
+
+    // Count child folders recursively
+    const getAllChildFolderIds = (parentId: string): string[] => {
+      const children = folders.filter((f) => f.parentId === parentId);
+      const childIds = children.map((f) => f.id);
+      const grandchildIds = childIds.flatMap((childId) => getAllChildFolderIds(childId));
+      return [...childIds, ...grandchildIds];
+    };
+
+    const childFolderIds = getAllChildFolderIds(folderId);
+    const allFolderIdsToDelete = [folderId, ...childFolderIds];
+    const scoresToDelete = scores.filter((score) =>
+      allFolderIdsToDelete.includes(score.folderId ?? ''),
+    );
+
+    const folderCount = allFolderIdsToDelete.length;
+    const scoreCount = scoresToDelete.length;
+
+    let message = `Are you sure you want to delete "${folder.name}"?`;
+    if (folderCount > 1 || scoreCount > 0) {
+      message += '\n\nThis will permanently delete:';
+      if (folderCount > 1) {
+        message += `\n• ${folderCount} folders (including all subfolders)`;
+      }
+      if (scoreCount > 0) {
+        message += `\n• ${scoreCount} score${scoreCount === 1 ? '' : 's'}`;
+      }
+      message += '\n\nThis action cannot be undone.';
+    }
+
+    if (window.confirm(message)) {
+      try {
+        setFolderError(undefined);
+        await deleteFolder(folderId);
+        // Navigate to parent if we deleted the current folder
+        if (currentFolderId === folderId) {
+          const parentId = folder.parentId;
+          setCurrentFolder(parentId);
+        }
+      } catch (error) {
+        setFolderError((error as Error).message);
+      }
+    }
+  };
+
   const emptyMessage =
     childFolders.length > 0
       ? 'This folder has no scores yet. Add or move scores into it to get started.'
@@ -186,7 +255,13 @@ const LibraryPage = () => {
       {childFolders.length > 0 && (
         <section className="flex flex-col gap-3">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-brand-300">Folders</h2>
-          <FolderGrid folders={childFolders} onOpen={(id) => setCurrentFolder(id)} onDropScore={handleDropScore} />
+          <FolderGrid
+            folders={childFolders}
+            onOpen={(id) => setCurrentFolder(id)}
+            onDropScore={handleDropScore}
+            onEditFolder={handleEditFolder}
+            onDeleteFolder={handleDeleteFolder}
+          />
         </section>
       )}
       <SpotlightSearch value={query} onChange={setQuery} onSortChange={setSort} sort={sort} />

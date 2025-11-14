@@ -202,15 +202,41 @@ export const useScoreStore = create<ScoreState>()(
       });
     },
     deleteFolder: async (id) => {
-      const hasChildren = get().folders.some((folder) => folder.parentId === id);
-      const hasScores = get().scores.some((score) => (score.folderId ?? null) === id);
-      if (hasChildren || hasScores) {
-        throw new Error('Folder must be empty before deleting.');
+      // Recursively get all child folder IDs
+      const getAllChildFolderIds = (parentId: string): string[] => {
+        const children = get().folders.filter((folder) => folder.parentId === parentId);
+        const childIds = children.map((folder) => folder.id);
+        // Recursively get grandchildren
+        const grandchildIds = childIds.flatMap((childId) => getAllChildFolderIds(childId));
+        return [...childIds, ...grandchildIds];
+      };
+
+      const childFolderIds = getAllChildFolderIds(id);
+      const allFolderIdsToDelete = [id, ...childFolderIds];
+
+      // Get all scores in this folder and all child folders
+      const scoresToDelete = get().scores.filter(
+        (score) => allFolderIdsToDelete.includes(score.folderId ?? ''),
+      );
+
+      // Delete all scores
+      for (const score of scoresToDelete) {
+        await db.scores.delete(score.id);
       }
-      await db.folders.delete(id);
+
+      // Delete all folders (children first, then parent)
+      for (const folderId of allFolderIdsToDelete.reverse()) {
+        await db.folders.delete(folderId);
+      }
+
+      // Update state
       set((state) => ({
-        folders: state.folders.filter((folder) => folder.id !== id),
-        currentFolderId: state.currentFolderId === id ? null : state.currentFolderId,
+        folders: state.folders.filter((folder) => !allFolderIdsToDelete.includes(folder.id)),
+        scores: state.scores.filter((score) => !scoresToDelete.some((s) => s.id === score.id)),
+        currentFolderId: allFolderIdsToDelete.includes(state.currentFolderId ?? '') ? null : state.currentFolderId,
+        selectedScoreId: scoresToDelete.some((s) => s.id === state.selectedScoreId)
+          ? undefined
+          : state.selectedScoreId,
       }));
     },
     setCurrentFolder: (id) => set({ currentFolderId: id ?? null }),
