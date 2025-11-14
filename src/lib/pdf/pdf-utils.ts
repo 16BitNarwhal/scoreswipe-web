@@ -1,13 +1,47 @@
+import * as pdfjsLib from 'pdfjs-dist';
 import type { ScorePage } from '@/lib/models/score';
 
+// Set up the worker for pdfjs-dist
+if (typeof window !== 'undefined') {
+  // Use local worker file from public folder
+  pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
+}
+
 const createScorePage = async (file: File, index: number): Promise<ScorePage> => {
-  const imageBlob = file.type.startsWith('image/') ? file : new Blob([await file.arrayBuffer()]);
+  let imageBlob: Blob;
+  let width = 0;
+  let height = 0;
+
+  if (file.type.startsWith('image/')) {
+    // Create a blob from the file to ensure it's properly serializable
+    imageBlob = new Blob([await file.arrayBuffer()], { type: file.type });
+    // Get image dimensions
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(imageBlob);
+    await new Promise<void>((resolve, reject) => {
+      img.onload = () => {
+        width = img.naturalWidth;
+        height = img.naturalHeight;
+        URL.revokeObjectURL(objectUrl);
+        resolve();
+      };
+      img.onerror = (err) => {
+        URL.revokeObjectURL(objectUrl);
+        reject(new Error(`Failed to load image: ${err}`));
+      };
+      img.src = objectUrl;
+    });
+  } else {
+    // This shouldn't happen for images, but handle it
+    imageBlob = new Blob([await file.arrayBuffer()], { type: file.type });
+  }
+
   return {
     id: crypto.randomUUID(),
     index,
     imageBlob,
-    width: 0,
-    height: 0,
+    width,
+    height,
   };
 };
 
@@ -16,8 +50,65 @@ export const imagesToPages = async (files: File[]): Promise<ScorePage[]> => {
   return pages;
 };
 
-export const pdfToPages = async (_file: File): Promise<ScorePage[]> => {
-  // TODO: Implement PDF rasterization using pdfjs-dist worker in a Web Worker context.
-  // For now, return an empty array to unblock UI wiring.
-  return [];
+const renderPdfPageToBlob = async (
+  page: pdfjsLib.PDFPageProxy,
+  scale: number = 2.0,
+): Promise<{ blob: Blob; width: number; height: number }> => {
+  const viewport = page.getViewport({ scale });
+  const canvas = document.createElement('canvas');
+  const context = canvas.getContext('2d');
+  
+  if (!context) {
+    throw new Error('Could not get canvas context');
+  }
+
+  canvas.width = viewport.width;
+  canvas.height = viewport.height;
+
+  const renderContext = {
+    canvasContext: context,
+    viewport,
+  };
+
+  await page.render(renderContext).promise;
+
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => {
+        if (!blob) {
+          reject(new Error('Failed to convert canvas to blob'));
+          return;
+        }
+        resolve({
+          blob,
+          width: viewport.width,
+          height: viewport.height,
+        });
+      },
+      'image/png',
+      1.0,
+    );
+  });
+};
+
+export const pdfToPages = async (file: File): Promise<ScorePage[]> => {
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  const numPages = pdf.numPages;
+  const pages: ScorePage[] = [];
+
+  for (let pageNum = 1; pageNum <= numPages; pageNum++) {
+    const page = await pdf.getPage(pageNum);
+    const { blob, width, height } = await renderPdfPageToBlob(page);
+    
+    pages.push({
+      id: crypto.randomUUID(),
+      index: pageNum - 1,
+      imageBlob: blob,
+      width,
+      height,
+    });
+  }
+
+  return pages;
 };

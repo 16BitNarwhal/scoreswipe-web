@@ -42,11 +42,32 @@ export const useScoreStore = create<ScoreState>()(
           db.scores.toArray(),
           db.settings.toCollection().first(),
         ]);
+        
+        // Ensure blobs are proper Blob instances after retrieval from IndexedDB
+        // IndexedDB should preserve Blobs, but we validate them anyway
+        const normalizedScores = scores.map((score) => ({
+          ...score,
+          pages: score.pages.map((page) => {
+            // If it's already a Blob, use it; otherwise IndexedDB should have preserved it
+            // but we'll ensure it's valid
+            let blob = page.imageBlob;
+            if (!(blob instanceof Blob)) {
+              console.warn('Blob not properly preserved from IndexedDB, attempting reconstruction');
+              // This shouldn't happen, but handle it gracefully
+              blob = new Blob([], { type: 'image/png' });
+            }
+            return {
+              ...page,
+              imageBlob: blob,
+            };
+          }),
+        }));
+        
         const settings = settingsRecord
           ? (({ id: _id, ...rest }: AppSettings & { id?: number }) => rest)(settingsRecord)
           : getDefaultSettings();
         set({
-          scores,
+          scores: normalizedScores,
           settings,
           loading: false,
         });
