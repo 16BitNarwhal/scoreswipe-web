@@ -8,6 +8,7 @@ import { useScoreStore } from '@/store/score-store';
 import type { ScorePage, ScoreSource } from '@/lib/models/score';
 import { Camera, FileImage, FileText, Loader2, Trash } from 'lucide-react';
 import PageThumbnail from '@/components/create/page-thumbnail';
+import CameraCapture from '@/components/create/camera-capture';
 import { getFolderTree, getFolderPathLabel } from '@/lib/utils/folders';
 
 const CreatePage = () => {
@@ -23,6 +24,7 @@ const CreatePage = () => {
   const [source, setSource] = useState<ScoreSource>('pdf');
   const [isBusy, setIsBusy] = useState(false);
   const [error, setError] = useState<string | undefined>();
+  const [showCamera, setShowCamera] = useState(false);
 
   const isValid = useMemo(() => name.trim().length > 0 && pages.length > 0, [name, pages.length]);
   const folderOptions = useMemo(() => getFolderTree(folders), [folders]);
@@ -64,6 +66,12 @@ const CreatePage = () => {
 
   const handleDeletePage = (id: string) => {
     setPages((prev) => prev.filter((page) => page.id !== id).map((page, index) => ({ ...page, index })));
+  };
+
+  const handleCameraCapture = (newPages: ScorePage[]) => {
+    setPages((prev) => [...prev, ...newPages.map((page, idx) => ({ ...page, index: prev.length + idx }))]);
+    setSource('camera');
+    setShowCamera(false);
   };
 
   const handleSubmit = async () => {
@@ -123,10 +131,10 @@ const CreatePage = () => {
             <button
               type="button"
               className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-brand-200 px-5 py-3 text-sm text-brand-400 transition hover:border-brand-300 sm:w-auto"
-              onClick={() => setSource('camera')}
+              onClick={() => setShowCamera(true)}
             >
               <Camera className="h-4 w-4" />
-              Capture from camera (coming soon)
+              Capture from camera
             </button>
           </div>
         </div>
@@ -201,6 +209,9 @@ const CreatePage = () => {
         </button>
         {error && <p className="text-sm text-red-500">{error}</p>}
       </aside>
+      {showCamera && (
+        <CameraCapture onCapture={handleCameraCapture} onClose={() => setShowCamera(false)} />
+      )}
     </div>
   );
 };
