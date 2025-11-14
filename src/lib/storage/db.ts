@@ -41,7 +41,7 @@ export const getDefaultSettings = (): AppSettings => ({
     neutralEulerY: 0,
     neutralEulerZ: 0,
     sensitivity: 0.5,
-    invertDirection: false,
+    invertDirection: true,
     swipeMode: 'tilt',
   },
   viewer: {
