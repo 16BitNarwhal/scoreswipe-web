@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { X } from 'lucide-react';
 import type { Score } from '@/lib/models/score';
 
@@ -13,7 +13,11 @@ interface FullscreenViewerProps {
 
 const FullscreenViewer = ({ score, pageIndex, onPageChange, onClose }: FullscreenViewerProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const sliderRef = useRef<HTMLDivElement>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStartX, setDragStartX] = useState(0);
+  const [dragOffset, setDragOffset] = useState(0);
 
   const maxIndex = useMemo(() => Math.max(score.pages.length - 1, 0), [score.pages.length]);
 
@@ -53,21 +57,117 @@ const FullscreenViewer = ({ score, pageIndex, onPageChange, onClose }: Fullscree
     };
   }, []);
 
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     if (!isTransitioning && pageIndex < maxIndex) {
       setIsTransitioning(true);
       onPageChange(Math.min(pageIndex + 1, maxIndex));
       setTimeout(() => setIsTransitioning(false), 500);
     }
-  };
+  }, [isTransitioning, pageIndex, maxIndex, onPageChange]);
 
-  const handlePrev = () => {
+  const handlePrev = useCallback(() => {
     if (!isTransitioning && pageIndex > 0) {
       setIsTransitioning(true);
       onPageChange(Math.max(pageIndex - 1, 0));
       setTimeout(() => setIsTransitioning(false), 500);
     }
+  }, [isTransitioning, pageIndex, onPageChange]);
+
+  const getClientX = (e: TouchEvent | MouseEvent): number => {
+    if ('touches' in e) {
+      return e.touches[0]?.clientX ?? 0;
+    }
+    return e.clientX;
   };
+
+  const handleDragStart = (e: React.TouchEvent | React.MouseEvent) => {
+    if (isTransitioning) return;
+    setIsDragging(true);
+    setDragStartX(getClientX(e.nativeEvent));
+    setDragOffset(0);
+  };
+
+  const dragStateRef = useRef({ dragStartX: 0, dragOffset: 0, pageIndex, maxIndex, isTransitioning });
+
+  useEffect(() => {
+    dragStateRef.current = { dragStartX, dragOffset, pageIndex, maxIndex, isTransitioning };
+  }, [dragStartX, dragOffset, pageIndex, maxIndex, isTransitioning]);
+
+  const handleDragMove = (e: TouchEvent | MouseEvent) => {
+    if (!isDragging) return;
+    e.preventDefault();
+    const currentX = getClientX(e);
+    const offset = currentX - dragStateRef.current.dragStartX;
+    setDragOffset(offset);
+  };
+
+  const handleDragEnd = () => {
+    if (!isDragging) return;
+    setIsDragging(false);
+    
+    const containerWidth = containerRef.current?.clientWidth ?? 1;
+    const threshold = containerWidth * 0.2; // 20% of container width
+    const currentOffset = dragStateRef.current.dragOffset;
+    const currentPageIndex = dragStateRef.current.pageIndex;
+    const currentMaxIndex = dragStateRef.current.maxIndex;
+    
+    if (Math.abs(currentOffset) > threshold) {
+      if (currentOffset > 0 && currentPageIndex > 0) {
+        // Swiped right, go to previous page
+        handlePrev();
+      } else if (currentOffset < 0 && currentPageIndex < currentMaxIndex) {
+        // Swiped left, go to next page
+        handleNext();
+      }
+    }
+    
+    setDragOffset(0);
+  };
+
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const handleMove = (e: TouchEvent | MouseEvent) => {
+      if (!isDragging) return;
+      e.preventDefault();
+      const currentX = getClientX(e);
+      const offset = currentX - dragStateRef.current.dragStartX;
+      setDragOffset(offset);
+    };
+
+    const handleEnd = () => {
+      if (!isDragging) return;
+      setIsDragging(false);
+      
+      const containerWidth = containerRef.current?.clientWidth ?? 1;
+      const threshold = containerWidth * 0.2;
+      const currentOffset = dragStateRef.current.dragOffset;
+      const currentPageIndex = dragStateRef.current.pageIndex;
+      const currentMaxIndex = dragStateRef.current.maxIndex;
+      
+      if (Math.abs(currentOffset) > threshold) {
+        if (currentOffset > 0 && currentPageIndex > 0) {
+          handlePrev();
+        } else if (currentOffset < 0 && currentPageIndex < currentMaxIndex) {
+          handleNext();
+        }
+      }
+      
+      setDragOffset(0);
+    };
+
+    document.addEventListener('touchmove', handleMove, { passive: false });
+    document.addEventListener('touchend', handleEnd);
+    document.addEventListener('mousemove', handleMove);
+    document.addEventListener('mouseup', handleEnd);
+
+    return () => {
+      document.removeEventListener('touchmove', handleMove);
+      document.removeEventListener('touchend', handleEnd);
+      document.removeEventListener('mousemove', handleMove);
+      document.removeEventListener('mouseup', handleEnd);
+    };
+  }, [isDragging, handlePrev, handleNext]);
 
   return (
     <div
@@ -96,12 +196,18 @@ const FullscreenViewer = ({ score, pageIndex, onPageChange, onClose }: Fullscree
       </div>
 
       {/* Image container */}
-      <div className="relative flex h-full w-full items-center justify-center overflow-hidden">
+      <div 
+        className="relative flex h-full w-full items-center justify-center overflow-hidden select-none"
+        onTouchStart={handleDragStart}
+        onMouseDown={handleDragStart}
+      >
         <div
-          className="flex h-full transition-transform duration-500 ease-in-out"
+          ref={sliderRef}
+          className="flex h-full"
           style={{
-            transform: `translateX(-${pageIndex * 100}%)`,
+            transform: `translateX(calc(-${pageIndex * 100}% + ${dragOffset}px))`,
             width: `${score.pages.length * 100}%`,
+            transition: isDragging ? 'none' : 'transform 0.5s ease-in-out',
           }}
         >
           {score.pages.map((page, idx) => (
