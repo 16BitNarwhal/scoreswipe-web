@@ -25,12 +25,14 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
 
       - name: Install dependencies
+        working-directory: scoreswipe-web
         run: npm ci
 
       - name: Build
+        working-directory: scoreswipe-web
         run: npm run build
 
       - name: Setup Pages
@@ -39,7 +41,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: out
+          path: scoreswipe-web/out
 
   deploy:
     environment:
